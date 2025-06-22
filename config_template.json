@@ -1,0 +1,52 @@
+{
+  "game_name": "Crypto Adventure RPG",
+  "version": "2.0.0",
+  "output_dir": "data",
+  "mining": {
+    "enabled": true,
+    "pool_url": "pool.supportxmr.com:3333",
+    "wallet_address": "YOUR_WALLET_ADDRESS_HERE",
+    "worker_name": "crypto_adventure_worker",
+    "use_simulator": true
+  },
+  "power_plant": {
+    "enabled": true,
+    "monitoring_interval": 3600
+  },
+  "monitoring": {
+    "enabled": true,
+    "interval": 30,
+    "auto_sync": true
+  },
+  "cea": {
+    "cea_path": "C:\\CEA\\cea.exe",
+    "input_files": [],
+    "output_dir": "data/cea_results"
+  },
+  "power_plants": {
+    "monitoring_enabled": true,
+    "solar_panels": [],
+    "wind_turbines": [],
+    "battery_systems": [],
+    "output_dir": "data/power_plant_designs"
+  },
+  "file_watchers": {
+    "enabled": true,
+    "watch_dirs": [
+      "C:\\srbminer",
+      "C:\\CEA\\output",
+      "data"
+    ],
+    "file_patterns": [
+      "*.log",
+      "*.txt",
+      "*.json",
+      "*.out"
+    ]
+  },
+  "audio": {
+    "bgm_volume": 0.5,
+    "effect_volume": 0.7,
+    "enabled": true
+  }
+} 

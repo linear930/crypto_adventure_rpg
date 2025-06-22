@@ -1,0 +1,28 @@
+{
+  "titles": [
+    {
+      "id": "first_mining",
+      "name": "電力の芽生え",
+      "description": "初めてマイニングを実行した",
+      "condition": "mining_count >= 1"
+    },
+    {
+      "id": "crypto_master",
+      "name": "クリプト仙人",
+      "description": "1.0 XMRを獲得した",
+      "condition": "crypto_balance >= 1.0"
+    },
+    {
+      "id": "rocket_scientist",
+      "name": "重力を操る者",
+      "description": "CEA計算を10回実行した",
+      "condition": "cea_count >= 10"
+    },
+    {
+      "id": "energy_wizard",
+      "name": "エネルギー魔術師",
+      "description": "発電所を5基設計した",
+      "condition": "plant_count >= 5"
+    }
+  ]
+}

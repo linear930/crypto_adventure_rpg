@@ -1,0 +1,30 @@
+{
+  "timestamp": "2025-06-22T13:25:38.204777",
+  "session_name": "",
+  "start_time": "",
+  "end_time": "",
+  "mining_config": {
+    "pool_url": "pool.supportxmr.com:3333",
+    "wallet_address": "",
+    "worker_name": "crypto_adventure_worker"
+  },
+  "hardware": {
+    "cpu_model": "",
+    "gpu_model": "",
+    "ram_gb": ""
+  },
+  "results": {
+    "hashrate": 1000.0,
+    "shares_submitted": 10,
+    "accepted_shares": 8,
+    "rejected_shares": 2,
+    "power_consumption": 100.0,
+    "efficiency": 10.0
+  },
+  "notes": {
+    "challenges": "",
+    "optimizations": "",
+    "learnings": ""
+  },
+  "status": "recorded"
+}

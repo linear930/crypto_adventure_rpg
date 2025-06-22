@@ -1,0 +1,11 @@
+{
+  "type": "solar",
+  "capacity": 1.0,
+  "daily_generation": 4.0,
+  "cost": 100000,
+  "efficiency": 0.18,
+  "panel_count": 8,
+  "installation_area": 15.0,
+  "roi_years": 8.5,
+  "co2_reduction": 4.2
+} 
