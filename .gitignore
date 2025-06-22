@@ -43,11 +43,18 @@ wallet.json
 # Game data and logs
 data/game_state.json
 data/wallet.json
+state.json
 data/mining_results/
 data/cea_results/
 data/power_plant_designs/
 data/astronomical_observations/
 data/logs/
+data/cea_calculation/
+data/cea_calculation_*.json
+data/mining_activities/
+data/optics_observations/
+data/power_generation/
+data/observation_*.json
 save/
 *.log
 

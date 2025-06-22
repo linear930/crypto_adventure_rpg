@@ -10,6 +10,10 @@ import time
 import math
 import subprocess
 import platform
+import threading
+import signal
+import os
+import psutil
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from datetime import datetime
@@ -28,6 +32,19 @@ class MoneroMiningLearningSystem:
         
         # マイニング設定
         self.mining_config = config.get('mining', {})
+        
+        # 現在のマイニングプロセス
+        self.current_mining_process = None
+        self.mining_thread = None
+        self.is_mining = False
+        self.mining_start_time = None
+        self.mining_stats = {
+            'hashrate': 0,
+            'shares_submitted': 0,
+            'accepted_shares': 0,
+            'rejected_shares': 0,
+            'power_consumption': 0
+        }
         
     def _initialize_learning_goals(self) -> Dict:
         """学習目標の初期化"""
@@ -104,34 +121,95 @@ class MoneroMiningLearningSystem:
         """マイニングセッションを記録"""
         print(f"\n⛏️  Moneroマイニング記録")
         print("="*40)
+        print("💡 入力中に「abort」と入力すると記録を中断できます")
+        print("-" * 40)
         
         # 基本情報入力
         print("📊 マイニングセッション情報を入力してください:")
         
         session_name = input("セッション名 (例: 朝のマイニング、夜間セッション): ").strip()
+        if session_name.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
+        
         start_time = input("開始時刻 (YYYY-MM-DD HH:MM): ").strip()
+        if start_time.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
+        
         end_time = input("終了時刻 (YYYY-MM-DD HH:MM): ").strip()
+        if end_time.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
         
         # マイニング設定入力
         print(f"\n⚙️ マイニング設定:")
-        pool_url = input("プールURL [pool.supportxmr.com:3333]: ").strip() or "pool.supportxmr.com:3333"
+        pool_url = input("プールURL [pool.supportxmr.com:3333]: ").strip()
+        if pool_url.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
+        pool_url = pool_url or "pool.supportxmr.com:3333"
+        
         wallet_address = input("ウォレットアドレス: ").strip()
-        worker_name = input("ワーカー名 [crypto_adventure_worker]: ").strip() or "crypto_adventure_worker"
+        if wallet_address.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
+        
+        worker_name = input("ワーカー名 [crypto_adventure_worker]: ").strip()
+        if worker_name.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
+        worker_name = worker_name or "crypto_adventure_worker"
         
         # ハードウェア情報入力
         print(f"\n🖥️ ハードウェア情報:")
         cpu_model = input("CPUモデル: ").strip()
+        if cpu_model.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
+        
         gpu_model = input("GPUモデル (使用する場合): ").strip()
+        if gpu_model.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
+        
         ram_gb = input("RAM容量 (GB): ").strip()
+        if ram_gb.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
         
         # マイニング結果入力
         print(f"\n📈 マイニング結果:")
         try:
-            hashrate = float(input("ハッシュレート (H/s) [1000]: ").strip() or "1000")
-            shares_submitted = int(input("提出したシェア数 [10]: ").strip() or "10")
-            accepted_shares = int(input("承認されたシェア数 [8]: ").strip() or "8")
-            rejected_shares = int(input("拒否されたシェア数 [2]: ").strip() or "2")
-            power_consumption = float(input("消費電力 (W) [100]: ").strip() or "100")
+            hashrate_input = input("ハッシュレート (H/s) [1000]: ").strip()
+            if hashrate_input.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
+            hashrate = float(hashrate_input or "1000")
+            
+            shares_sub_input = input("提出したシェア数 [10]: ").strip()
+            if shares_sub_input.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
+            shares_submitted = int(shares_sub_input or "10")
+            
+            accepted_shares_input = input("承認されたシェア数 [8]: ").strip()
+            if accepted_shares_input.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
+            accepted_shares = int(accepted_shares_input or "8")
+            
+            rejected_shares_input = input("拒否されたシェア数 [2]: ").strip()
+            if rejected_shares_input.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
+            rejected_shares = int(rejected_shares_input or "2")
+            
+            power_input = input("消費電力 (W) [100]: ").strip()
+            if power_input.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
+            power_consumption = float(power_input or "100")
             
         except ValueError:
             print("❌ 無効な値です。デフォルト値を使用します。")
@@ -140,8 +218,19 @@ class MoneroMiningLearningSystem:
         # 学習メモ入力
         print(f"\n📝 学習メモ:")
         challenges = input("課題や問題点: ").strip()
+        if challenges.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
+        
         optimizations = input("最適化や改善点: ").strip()
+        if optimizations.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
+        
         learnings = input("学んだこと: ").strip()
+        if learnings.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
         
         # 結果をまとめる
         result = {
@@ -431,97 +520,456 @@ class MoneroMiningLearningSystem:
         print(f"\n📖 Moneroマイニングガイド")
         print("="*50)
         
-        guide = {
-            'getting_started': {
-                'title': '🚀 始め方',
-                'steps': [
-                    'Moneroウォレットを作成',
-                    'マイニングプールを選択',
-                    'マイニングソフトウェアをダウンロード',
-                    '設定ファイルを作成',
-                    'マイニングを開始'
-                ]
-            },
-            'hardware_requirements': {
-                'title': '🖥️ ハードウェア要件',
-                'requirements': {
-                    'CPU': 'RandomXアルゴリズムに最適化されたCPU',
-                    'RAM': '最低4GB、推奨8GB以上',
-                    'Storage': 'SSD推奨',
-                    'Network': '安定したインターネット接続'
-                }
-            },
-            'popular_pools': {
-                'title': '🏊 人気プール',
-                'pools': [
-                    'pool.supportxmr.com',
-                    'xmr.2miners.com',
-                    'xmrpool.eu',
-                    'nanopool.org'
-                ]
-            },
-            'optimization_tips': {
-                'title': '⚡ 最適化のヒント',
-                'tips': [
-                    'CPUの全コアを使用',
-                    'RAMを十分に確保',
-                    '電力効率を考慮',
-                    '安定したネットワーク接続',
-                    '定期的なメンテナンス'
-                ]
-            }
-        }
+        print("🔧 セットアップ手順:")
+        print("1. cpuminer-optのインストール")
+        print("2. ウォレットの準備")
+        print("3. プールの選択")
+        print("4. マイニング設定")
+        print("5. マイニング開始")
         
-        for section_id, section in guide.items():
-            print(f"\n{section['title']}:")
-            if 'steps' in section:
-                for i, step in enumerate(section['steps'], 1):
-                    print(f"   {i}. {step}")
-            elif 'requirements' in section:
-                for req, desc in section['requirements'].items():
-                    print(f"   • {req}: {desc}")
-            elif 'pools' in section:
-                for pool in section['pools']:
-                    print(f"   • {pool}")
-            elif 'tips' in section:
-                for tip in section['tips']:
-                    print(f"   • {tip}")
-    
+        print(f"\n📦 cpuminer-optのインストール:")
+        if platform.system() == "Windows":
+            print("🪟 Windows用インストール手順:")
+            print("1. GitHubからダウンロード:")
+            print("   https://github.com/JayDDee/cpuminer-opt/releases")
+            print("2. 最新版のWindows x64版をダウンロード")
+            print("3. ファイルを解凍")
+            print("4. 解凍したフォルダをC:\\cpuminer-optに移動")
+            print("5. システム環境変数PATHにC:\\cpuminer-optを追加")
+            print("6. コマンドプロンプトで確認:")
+            print("   cpuminer-opt --help")
+        elif platform.system() == "Linux":
+            print("🐧 Linux用インストール手順:")
+            print("1. 必要なパッケージをインストール:")
+            print("   sudo apt-get update")
+            print("   sudo apt-get install build-essential git")
+            print("2. ソースコードをクローン:")
+            print("   git clone https://github.com/JayDDee/cpuminer-opt.git")
+            print("3. ビルドディレクトリに移動:")
+            print("   cd cpuminer-opt")
+            print("4. ビルドスクリプトを実行:")
+            print("   ./build.sh")
+            print("5. 実行ファイルをシステムパスにコピー:")
+            print("   sudo cp cpuminer /usr/local/bin/cpuminer-opt")
+            print("6. 動作確認:")
+            print("   cpuminer-opt --help")
+        elif platform.system() == "Darwin":
+            print("🍎 macOS用インストール手順:")
+            print("1. Homebrewがインストールされていない場合:")
+            print("   /bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"")
+            print("2. cpuminer-optをインストール:")
+            print("   brew install cpuminer-opt")
+            print("3. 動作確認:")
+            print("   cpuminer-opt --help")
+        
+        print(f"\n💰 ウォレット準備:")
+        print("   1. Moneroウォレットを作成")
+        print("   2. ウォレットアドレスをコピー")
+        print("   3. セキュリティを確保")
+        
+        print(f"\n📡 プール選択:")
+        print("   推奨プール:")
+        print("   - pool.supportxmr.com:3333")
+        print("   - xmr.pool.gntl.co.uk:10009")
+        print("   - poolto.be:3333")
+        
+        print(f"\n⚙️ 設定パラメータ:")
+        print("   - スレッド数: CPUコア数に応じて設定")
+        print("   - 強度: 1-20の範囲で設定")
+        print("   - ワーカー名: 識別用の名前")
+        
+        print(f"\n⚠️  注意事項:")
+        print("   - 電力消費に注意")
+        print("   - システム温度を監視")
+        print("   - ネットワーク接続を確保")
+        print("   - セキュリティソフトの設定")
+        
+        print(f"\n💡 トラブルシューティング:")
+        print("   - 接続エラー: プールURLを確認")
+        print("   - 低ハッシュレート: スレッド数と強度を調整")
+        print("   - 高CPU使用率: 強度を下げる")
+        print("   - プロセス終了: ログを確認")
+
+    def install_cpuminer_guide(self):
+        """cpuminer-optのインストールガイド"""
+        print(f"\n📦 cpuminer-optインストールガイド")
+        print("="*50)
+        
+        os_name = platform.system()
+        
+        if os_name == "Windows":
+            print("🪟 Windows用インストール手順:")
+            print("1. GitHubからダウンロード:")
+            print("   https://github.com/JayDDee/cpuminer-opt/releases")
+            print("2. 最新版のWindows x64版をダウンロード")
+            print("3. ファイルを解凍")
+            print("4. 解凍したフォルダをC:\\cpuminer-optに移動")
+            print("5. システム環境変数PATHにC:\\cpuminer-optを追加")
+            print("6. コマンドプロンプトで確認:")
+            print("   cpuminer-opt --help")
+            
+        elif os_name == "Linux":
+            print("🐧 Linux用インストール手順:")
+            print("1. 必要なパッケージをインストール:")
+            print("   sudo apt-get update")
+            print("   sudo apt-get install build-essential git")
+            print("2. ソースコードをクローン:")
+            print("   git clone https://github.com/JayDDee/cpuminer-opt.git")
+            print("3. ビルドディレクトリに移動:")
+            print("   cd cpuminer-opt")
+            print("4. ビルドスクリプトを実行:")
+            print("   ./build.sh")
+            print("5. 実行ファイルをシステムパスにコピー:")
+            print("   sudo cp cpuminer /usr/local/bin/cpuminer-opt")
+            print("6. 動作確認:")
+            print("   cpuminer-opt --help")
+            
+        elif os_name == "Darwin":
+            print("🍎 macOS用インストール手順:")
+            print("1. Homebrewがインストールされていない場合:")
+            print("   /bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"")
+            print("2. cpuminer-optをインストール:")
+            print("   brew install cpuminer-opt")
+            print("3. 動作確認:")
+            print("   cpuminer-opt --help")
+        
+        print(f"\n✅ インストール完了後、このゲームでマイニングを開始できます！")
+
     def check_system_compatibility(self) -> Dict:
         """システム互換性をチェック"""
-        print(f"\n🔍 システム互換性チェック")
-        print("="*40)
-        
         compatibility = {
             'os': platform.system(),
-            'architecture': platform.machine(),
-            'python_version': platform.python_version(),
             'cpu_cores': 0,
             'ram_gb': 0,
-            'mining_ready': False
+            'cpuminer_available': False,
+            'cpuminer_opt_available': False,
+            'xmr_stak_available': False,
+            'mining_supported': False,
+            'available_miners': []
         }
         
         # CPU情報
         try:
-            import psutil
             compatibility['cpu_cores'] = psutil.cpu_count()
             compatibility['ram_gb'] = psutil.virtual_memory().total / (1024**3)
-        except ImportError:
-            print("⚠️ psutilライブラリがインストールされていません")
-            compatibility['cpu_cores'] = 4  # 推定値
-            compatibility['ram_gb'] = 8     # 推定値
+        except:
+            pass
         
-        # マイニング準備状況
-        compatibility['mining_ready'] = (
-            compatibility['cpu_cores'] >= 2 and
-            compatibility['ram_gb'] >= 4
+        # 各種マイニングソフトウェアの存在確認
+        miners_to_check = [
+            ('cpuminer-opt', 'cpuminer-opt'),
+            ('cpuminer', 'cpuminer'),
+            ('xmr-stak', 'xmr-stak'),
+            ('xmrig', 'xmrig')
+        ]
+        
+        for miner_name, command in miners_to_check:
+            try:
+                result = subprocess.run([command, '--help'], 
+                                      capture_output=True, text=True, timeout=5)
+                if result.returncode == 0:
+                    compatibility[f'{miner_name}_available'] = True
+                    compatibility['available_miners'].append(miner_name)
+            except (FileNotFoundError, subprocess.TimeoutExpired):
+                pass
+        
+        # マイニングサポート判定
+        compatibility['mining_supported'] = (
+            compatibility['cpu_cores'] >= 2 and 
+            compatibility['ram_gb'] >= 2.0 and
+            len(compatibility['available_miners']) > 0
         )
         
-        print(f"💻 OS: {compatibility['os']}")
-        print(f"🏗️ アーキテクチャ: {compatibility['architecture']}")
-        print(f"🐍 Python: {compatibility['python_version']}")
-        print(f"🔢 CPUコア数: {compatibility['cpu_cores']}")
-        print(f"💾 RAM: {compatibility['ram_gb']:.1f} GB")
-        print(f"⛏️ マイニング準備: {'✅' if compatibility['mining_ready'] else '❌'}")
+        return compatibility
+
+    def configure_mining(self) -> Dict:
+        """マイニング設定を構成"""
+        print(f"\n⚙️ マイニング設定")
+        print("="*40)
+        print("💡 入力中に「abort」と入力すると設定を中断できます")
+        print("-" * 40)
         
-        return compatibility 
+        # 利用可能なマイニングソフトウェアを確認
+        compatibility = self.check_system_compatibility()
+        if not compatibility['available_miners']:
+            print("❌ 利用可能なマイニングソフトウェアが見つかりません")
+            print("📦 インストールガイドを参照してください")
+            return None
+        
+        print(f"✅ 利用可能なマイニングソフトウェア: {', '.join(compatibility['available_miners'])}")
+        
+        # マイニングソフトウェア選択
+        print(f"\n🔧 マイニングソフトウェア選択:")
+        for i, miner in enumerate(compatibility['available_miners'], 1):
+            print(f"   {i}. {miner}")
+        
+        try:
+            miner_choice = input(f"選択してください (1-{len(compatibility['available_miners'])}): ").strip()
+            if miner_choice.lower() == "abort":
+                print("❌ 設定を中断しました")
+                return None
+            
+            selected_miner = compatibility['available_miners'][int(miner_choice) - 1]
+        except (ValueError, IndexError):
+            print("❌ 無効な選択です。最初のマイニングソフトウェアを使用します。")
+            selected_miner = compatibility['available_miners'][0]
+        
+        # プール設定
+        print(f"\n📊 プール設定:")
+        pool_url = input("プールURL [pool.supportxmr.com:3333]: ").strip()
+        if pool_url.lower() == "abort":
+            print("❌ 設定を中断しました")
+            return None
+        pool_url = pool_url or "pool.supportxmr.com:3333"
+        
+        wallet_address = input("ウォレットアドレス: ").strip()
+        if wallet_address.lower() == "abort":
+            print("❌ 設定を中断しました")
+            return None
+        
+        worker_name = input("ワーカー名 [crypto_adventure_worker]: ").strip()
+        if worker_name.lower() == "abort":
+            print("❌ 設定を中断しました")
+            return None
+        worker_name = worker_name or "crypto_adventure_worker"
+        
+        # マイニング設定
+        print(f"\n⛏️ マイニング設定:")
+        try:
+            threads_input = input("スレッド数 [4]: ").strip()
+            if threads_input.lower() == "abort":
+                print("❌ 設定を中断しました")
+                return None
+            threads = int(threads_input or "4")
+            
+            intensity_input = input("強度 (1-20) [10]: ").strip()
+            if intensity_input.lower() == "abort":
+                print("❌ 設定を中断しました")
+                return None
+            intensity = int(intensity_input or "10")
+            
+        except ValueError:
+            print("❌ 無効な値です。デフォルト値を使用します。")
+            threads, intensity = 4, 10
+        
+        # 設定を保存
+        self.mining_config = {
+            'miner': selected_miner,
+            'pool_url': pool_url,
+            'wallet_address': wallet_address,
+            'worker_name': worker_name,
+            'threads': threads,
+            'intensity': intensity
+        }
+        
+        print(f"\n✅ マイニング設定を保存しました:")
+        print(f"   🔧 マイニングソフト: {selected_miner}")
+        print(f"   📡 プール: {pool_url}")
+        print(f"   💰 ウォレット: {wallet_address[:10]}...")
+        print(f"   👷 ワーカー: {worker_name}")
+        print(f"   🧵 スレッド数: {threads}")
+        print(f"   ⚡ 強度: {intensity}")
+        
+        return self.mining_config
+
+    def start_mining(self) -> bool:
+        """マイニングを開始"""
+        if self.is_mining:
+            print("❌ 既にマイニング中です")
+            return False
+        
+        if not self.mining_config:
+            print("❌ マイニング設定が未設定です。先に設定を行ってください。")
+            return False
+        
+        print(f"\n🚀 マイニングを開始します...")
+        print(f"   🔧 マイニングソフト: {self.mining_config['miner']}")
+        print(f"   📡 プール: {self.mining_config['pool_url']}")
+        print(f"   👷 ワーカー: {self.mining_config['worker_name']}")
+        print(f"   🧵 スレッド数: {self.mining_config['threads']}")
+        print(f"   ⚡ 強度: {self.mining_config['intensity']}")
+        
+        try:
+            # マイニングソフトウェアに応じたコマンドを構築
+            cmd = self._build_mining_command()
+            
+            print(f"\n🔧 実行コマンド: {' '.join(cmd)}")
+            
+            # マイニングプロセスを開始
+            self.current_mining_process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                bufsize=1,
+                universal_newlines=True
+            )
+            
+            self.is_mining = True
+            self.mining_start_time = datetime.now()
+            
+            print("✅ マイニングプロセスを開始しました")
+            print("💡 マイニングを停止するには、メニューから「マイニング停止」を選択してください")
+            
+            # マイニング監視スレッドを開始
+            self.mining_thread = threading.Thread(target=self._monitor_mining)
+            self.mining_thread.daemon = True
+            self.mining_thread.start()
+            
+            return True
+            
+        except FileNotFoundError:
+            print(f"❌ {self.mining_config['miner']}が見つかりません。インストールしてください。")
+            return False
+        except Exception as e:
+            print(f"❌ マイニング開始エラー: {e}")
+            return False
+
+    def _build_mining_command(self) -> List[str]:
+        """マイニングソフトウェアに応じたコマンドを構築"""
+        miner = self.mining_config['miner']
+        
+        if miner == 'cpuminer-opt':
+            return [
+                'cpuminer-opt',
+                '-o', f"stratum+tcp://{self.mining_config['pool_url']}",
+                '-u', self.mining_config['wallet_address'],
+                '-p', self.mining_config['worker_name'],
+                '-t', str(self.mining_config['threads']),
+                '--cpu-priority', str(self.mining_config['intensity'])
+            ]
+        elif miner == 'cpuminer':
+            return [
+                'cpuminer',
+                '-o', f"stratum+tcp://{self.mining_config['pool_url']}",
+                '-u', self.mining_config['wallet_address'],
+                '-p', self.mining_config['worker_name'],
+                '-t', str(self.mining_config['threads'])
+            ]
+        elif miner == 'xmrig':
+            return [
+                'xmrig',
+                '-o', self.mining_config['pool_url'],
+                '-u', self.mining_config['wallet_address'],
+                '-p', self.mining_config['worker_name'],
+                '--threads', str(self.mining_config['threads'])
+            ]
+        else:
+            # デフォルトはcpuminer-opt形式
+            return [
+                miner,
+                '-o', f"stratum+tcp://{self.mining_config['pool_url']}",
+                '-u', self.mining_config['wallet_address'],
+                '-p', self.mining_config['worker_name'],
+                '-t', str(self.mining_config['threads'])
+            ]
+
+    def stop_mining(self) -> bool:
+        """マイニングを停止"""
+        if not self.is_mining:
+            print("❌ マイニング中ではありません")
+            return False
+        
+        print("\n🛑 マイニングを停止しています...")
+        
+        try:
+            if self.current_mining_process:
+                self.current_mining_process.terminate()
+                self.current_mining_process.wait(timeout=10)
+            
+            self.is_mining = False
+            self.mining_start_time = None
+            
+            print("✅ マイニングを停止しました")
+            return True
+            
+        except subprocess.TimeoutExpired:
+            print("⚠️ プロセスの強制終了が必要です...")
+            if self.current_mining_process:
+                self.current_mining_process.kill()
+            self.is_mining = False
+            return True
+        except Exception as e:
+            print(f"❌ マイニング停止エラー: {e}")
+            return False
+
+    def _monitor_mining(self):
+        """マイニングプロセスを監視"""
+        while self.is_mining and self.current_mining_process:
+            try:
+                # プロセスの状態をチェック
+                if self.current_mining_process.poll() is not None:
+                    print("❌ マイニングプロセスが終了しました")
+                    self.is_mining = False
+                    break
+                
+                # 出力を読み取り
+                output = self.current_mining_process.stdout.readline()
+                if output:
+                    self._parse_mining_output(output.strip())
+                
+                time.sleep(1)
+                
+            except Exception as e:
+                print(f"⚠️ 監視エラー: {e}")
+                break
+
+    def _parse_mining_output(self, output: str):
+        """マイニング出力を解析"""
+        if "accepted" in output.lower():
+            self.mining_stats['accepted_shares'] += 1
+            self.mining_stats['shares_submitted'] += 1
+            print(f"✅ シェア承認: {output}")
+        elif "rejected" in output.lower():
+            self.mining_stats['rejected_shares'] += 1
+            self.mining_stats['shares_submitted'] += 1
+            print(f"❌ シェア拒否: {output}")
+        elif "hashrate" in output.lower():
+            # ハッシュレートを抽出
+            try:
+                hashrate_str = output.split('hashrate')[1].split()[0]
+                self.mining_stats['hashrate'] = float(hashrate_str)
+            except:
+                pass
+        elif "error" in output.lower():
+            print(f"⚠️ エラー: {output}")
+
+    def get_mining_status(self) -> Dict:
+        """マイニング状態を取得"""
+        if not self.is_mining:
+            return {'status': 'stopped'}
+        
+        runtime = datetime.now() - self.mining_start_time if self.mining_start_time else None
+        
+        return {
+            'status': 'running',
+            'start_time': self.mining_start_time.isoformat() if self.mining_start_time else None,
+            'runtime': str(runtime) if runtime else None,
+            'stats': self.mining_stats.copy(),
+            'process_alive': self.current_mining_process.poll() is None if self.current_mining_process else False
+        }
+
+    def show_mining_status(self):
+        """マイニング状態を表示"""
+        status = self.get_mining_status()
+        
+        print(f"\n📊 マイニング状態")
+        print("="*40)
+        
+        if status['status'] == 'stopped':
+            print("⏸️  マイニング停止中")
+            return
+        
+        print(f"🟢 マイニング実行中")
+        print(f"   🕐 開始時刻: {status['start_time']}")
+        print(f"   ⏱️  実行時間: {status['runtime']}")
+        print(f"   ⚡ ハッシュレート: {status['stats']['hashrate']:.2f} H/s")
+        print(f"   📊 提出シェア: {status['stats']['shares_submitted']}")
+        print(f"   ✅ 承認シェア: {status['stats']['accepted_shares']}")
+        print(f"   ❌ 拒否シェア: {status['stats']['rejected_shares']}")
+        print(f"   🔌 消費電力: {status['stats']['power_consumption']} W")
+        
+        if status['process_alive']:
+            print(f"   🟢 プロセス状態: 実行中")
+        else:
+            print(f"   🔴 プロセス状態: 停止") 

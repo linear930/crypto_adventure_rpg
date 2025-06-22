@@ -29,13 +29,13 @@ class PowerGenerationLearningSystem:
         return {
             'basic_goals': [
                 {
-                    'id': 'first_power',
-                    'name': '初めての発電',
-                    'description': '初めて発電方法を記録した',
+                    'id': 'first_power_sparkle',
+                    'name': '初電の煌めき',
+                    'description': '初めての電力生成を記録',
                     'type': 'achievement',
                     'target': 1,
                     'current': 0,
-                    'reward': {'experience': 100, 'crypto': 0.001},
+                    'reward': {'experience': 120, 'crypto': 0.0012},
                     'status': 'locked'
                 },
                 {
@@ -49,57 +49,307 @@ class PowerGenerationLearningSystem:
                     'status': 'active'
                 }
             ],
-            'renewable_goals': [
+            'renewable_energy_goals': [
                 {
-                    'id': 'solar_power',
-                    'name': '太陽光発電マスター',
-                    'description': '太陽光発電の詳細記録を5回以上',
-                    'type': 'collection',
-                    'target': 5,
+                    'id': 'wind_conductor',
+                    'name': '風の調律者',
+                    'description': '風速10m/s以上での風力発電を記録',
+                    'type': 'achievement',
+                    'target': 1,
                     'current': 0,
-                    'reward': {'experience': 300, 'crypto': 0.003},
+                    'reward': {'experience': 220, 'crypto': 0.0022},
                     'status': 'active'
                 },
                 {
-                    'id': 'wind_power',
-                    'name': '風力発電マスター',
-                    'description': '風力発電の詳細記録を3回以上',
+                    'id': 'solar_poet',
+                    'name': '太陽光の詩人',
+                    'description': '異なる5地点で太陽光発電を記録',
+                    'type': 'collection',
+                    'target': 5,
+                    'current': 0,
+                    'reward': {'experience': 280, 'crypto': 0.0028},
+                    'status': 'active'
+                },
+                {
+                    'id': 'water_flow_melody',
+                    'name': '水流の旋律',
+                    'description': '河川での水力発電を複数回記録',
                     'type': 'collection',
                     'target': 3,
+                    'current': 0,
+                    'reward': {'experience': 240, 'crypto': 0.0024},
+                    'status': 'active'
+                },
+                {
+                    'id': 'biomass_breath',
+                    'name': 'バイオマスの息吹',
+                    'description': 'バイオマス発電を成功させる',
+                    'type': 'achievement',
+                    'target': 1,
+                    'current': 0,
+                    'reward': {'experience': 230, 'crypto': 0.0023},
+                    'status': 'active'
+                },
+                {
+                    'id': 'tidal_explorer',
+                    'name': '潮流の探求者',
+                    'description': '潮流発電のデータを取得',
+                    'type': 'achievement',
+                    'target': 1,
                     'current': 0,
                     'reward': {'experience': 250, 'crypto': 0.0025},
                     'status': 'active'
                 },
                 {
-                    'id': 'hydro_power',
-                    'name': '水力発電マスター',
-                    'description': '水力発電の詳細記録を2回以上',
-                    'type': 'collection',
-                    'target': 2,
-                    'current': 0,
-                    'reward': {'experience': 200, 'crypto': 0.002},
-                    'status': 'active'
-                }
-            ],
-            'advanced_goals': [
-                {
-                    'id': 'hybrid_system',
-                    'name': 'ハイブリッドシステム',
-                    'description': '複数の発電方法を組み合わせたシステムを記録',
+                    'id': 'geothermal_heartbeat',
+                    'name': '地熱の鼓動',
+                    'description': '地熱発電システムの記録を作成',
                     'type': 'achievement',
                     'target': 1,
                     'current': 0,
-                    'reward': {'experience': 400, 'crypto': 0.004},
+                    'reward': {'experience': 270, 'crypto': 0.0027},
                     'status': 'active'
                 },
                 {
-                    'id': 'efficiency_improvement',
-                    'name': '効率改善',
-                    'description': '発電効率を10%以上改善した記録',
+                    'id': 'wave_energy_explorer',
+                    'name': '波動エネルギーの探検家',
+                    'description': '波力発電のデータを初めて記録',
+                    'type': 'achievement',
+                    'target': 1,
+                    'current': 0,
+                    'reward': {'experience': 300, 'crypto': 0.003},
+                    'status': 'active'
+                }
+            ],
+            'efficiency_goals': [
+                {
+                    'id': 'thermoelectric_alchemy',
+                    'name': '熱電の錬金術',
+                    'description': '廃熱回収発電を試し記録',
+                    'type': 'achievement',
+                    'target': 1,
+                    'current': 0,
+                    'reward': {'experience': 260, 'crypto': 0.0026},
+                    'status': 'active'
+                },
+                {
+                    'id': 'efficiency_explorer',
+                    'name': '効率の探求者',
+                    'description': '総合発電効率を15%以上向上',
                     'type': 'achievement',
                     'target': 1,
                     'current': 0,
                     'reward': {'experience': 350, 'crypto': 0.0035},
+                    'status': 'active'
+                },
+                {
+                    'id': 'power_conversion_magician',
+                    'name': '電力変換の魔術師',
+                    'description': 'インバータ効率90%以上を達成',
+                    'type': 'achievement',
+                    'target': 1,
+                    'current': 0,
+                    'reward': {'experience': 310, 'crypto': 0.0031},
+                    'status': 'active'
+                },
+                {
+                    'id': 'cooling_efficiency_alchemist',
+                    'name': '冷却効率の錬金術師',
+                    'description': '発電機冷却効率を10%以上向上',
+                    'type': 'achievement',
+                    'target': 1,
+                    'current': 0,
+                    'reward': {'experience': 300, 'crypto': 0.003},
+                    'status': 'active'
+                },
+                {
+                    'id': 'energy_saving_missionary',
+                    'name': '省エネ発電の伝道師',
+                    'description': '発電にかかるエネルギーロスを削減',
+                    'type': 'achievement',
+                    'target': 1,
+                    'current': 0,
+                    'reward': {'experience': 320, 'crypto': 0.0032},
+                    'status': 'active'
+                },
+                {
+                    'id': 'solar_panel_cleaning_master',
+                    'name': 'ソーラーパネル洗浄マスター',
+                    'description': 'パネル汚れ低減による発電効率向上',
+                    'type': 'achievement',
+                    'target': 1,
+                    'current': 0,
+                    'reward': {'experience': 280, 'crypto': 0.0028},
+                    'status': 'active'
+                },
+                {
+                    'id': 'inverter_optimization_artisan',
+                    'name': 'インバータ最適化の職人',
+                    'description': 'インバータ出力波形の歪み10%以下に改善',
+                    'type': 'achievement',
+                    'target': 1,
+                    'current': 0,
+                    'reward': {'experience': 310, 'crypto': 0.0031},
+                    'status': 'active'
+                }
+            ],
+            'storage_goals': [
+                {
+                    'id': 'storage_guardian',
+                    'name': '蓄電の守護者',
+                    'description': '蓄電池システムの効率を記録',
+                    'type': 'achievement',
+                    'target': 1,
+                    'current': 0,
+                    'reward': {'experience': 300, 'crypto': 0.003},
+                    'status': 'active'
+                },
+                {
+                    'id': 'night_power_pioneer',
+                    'name': '夜間発電の開拓者',
+                    'description': '蓄電を利用した夜間電力供給成功',
+                    'type': 'achievement',
+                    'target': 1,
+                    'current': 0,
+                    'reward': {'experience': 280, 'crypto': 0.0028},
+                    'status': 'active'
+                }
+            ],
+            'grid_goals': [
+                {
+                    'id': 'smart_grid_dream',
+                    'name': 'スマートグリッドの夢',
+                    'description': '電力ネットワークの負荷制御を成功',
+                    'type': 'achievement',
+                    'target': 1,
+                    'current': 0,
+                    'reward': {'experience': 320, 'crypto': 0.0032},
+                    'status': 'active'
+                },
+                {
+                    'id': 'renewable_mix_master',
+                    'name': '再生可能ミックスマスター',
+                    'description': '3種以上の発電方法を同時に運用',
+                    'type': 'achievement',
+                    'target': 1,
+                    'current': 0,
+                    'reward': {'experience': 340, 'crypto': 0.0034},
+                    'status': 'active'
+                },
+                {
+                    'id': 'voltage_stability_guardian',
+                    'name': '電圧安定の守護者',
+                    'description': '電圧変動を±1%以内に制御成功',
+                    'type': 'achievement',
+                    'target': 1,
+                    'current': 0,
+                    'reward': {'experience': 310, 'crypto': 0.0031},
+                    'status': 'active'
+                },
+                {
+                    'id': 'grid_cooperation_strategist',
+                    'name': 'グリッド連携の策士',
+                    'description': '電力グリッドとの連携運転を実施',
+                    'type': 'achievement',
+                    'target': 1,
+                    'current': 0,
+                    'reward': {'experience': 320, 'crypto': 0.0032},
+                    'status': 'active'
+                }
+            ],
+            'environmental_goals': [
+                {
+                    'id': 'low_environmental_impact_knight',
+                    'name': '低環境負荷の騎士',
+                    'description': 'CO2排出を大幅削減した発電を記録',
+                    'type': 'achievement',
+                    'target': 1,
+                    'current': 0,
+                    'reward': {'experience': 330, 'crypto': 0.0033},
+                    'status': 'active'
+                },
+                {
+                    'id': 'local_energy_pioneer',
+                    'name': '地産地消エネルギーの開拓者',
+                    'description': '地域密着型発電システムを成功させる',
+                    'type': 'achievement',
+                    'target': 1,
+                    'current': 0,
+                    'reward': {'experience': 350, 'crypto': 0.0035},
+                    'status': 'active'
+                }
+            ],
+            'system_goals': [
+                {
+                    'id': 'self_generation_architect',
+                    'name': '自家発電アーキテクト',
+                    'description': '小規模自家発電システムを構築・記録',
+                    'type': 'achievement',
+                    'target': 1,
+                    'current': 0,
+                    'reward': {'experience': 290, 'crypto': 0.0029},
+                    'status': 'active'
+                },
+                {
+                    'id': 'environmental_adaptation_engineer',
+                    'name': '環境適応エンジニア',
+                    'description': '厳寒・高温環境下での発電記録作成',
+                    'type': 'achievement',
+                    'target': 1,
+                    'current': 0,
+                    'reward': {'experience': 310, 'crypto': 0.0031},
+                    'status': 'active'
+                },
+                {
+                    'id': 'wind_direction_tracking_poet',
+                    'name': '風向追尾の詩人',
+                    'description': '風向に最適追尾するタービン設計',
+                    'type': 'achievement',
+                    'target': 1,
+                    'current': 0,
+                    'reward': {'experience': 310, 'crypto': 0.0031},
+                    'status': 'active'
+                },
+                {
+                    'id': 'emergency_backup_planner',
+                    'name': '緊急電力バックアップ計画',
+                    'description': '停電時のバックアップ運用を記録',
+                    'type': 'achievement',
+                    'target': 1,
+                    'current': 0,
+                    'reward': {'experience': 320, 'crypto': 0.0032},
+                    'status': 'active'
+                }
+            ],
+            'advanced_analysis_goals': [
+                {
+                    'id': 'demand_prediction_magician',
+                    'name': '電力需要予測の魔術師',
+                    'description': '需要予測モデルを活用し最適運用',
+                    'type': 'achievement',
+                    'target': 1,
+                    'current': 0,
+                    'reward': {'experience': 340, 'crypto': 0.0034},
+                    'status': 'active'
+                },
+                {
+                    'id': 'anomaly_detection_guardian',
+                    'name': '異常検知の守護神',
+                    'description': '故障予知・異常検知システムを構築',
+                    'type': 'achievement',
+                    'target': 1,
+                    'current': 0,
+                    'reward': {'experience': 330, 'crypto': 0.0033},
+                    'status': 'active'
+                },
+                {
+                    'id': 'future_energy_visionary',
+                    'name': '未来エネルギービジョナリー',
+                    'description': '革新的発電技術のシミュレーション成功',
+                    'type': 'achievement',
+                    'target': 1,
+                    'current': 0,
+                    'reward': {'experience': 400, 'crypto': 0.004},
                     'status': 'active'
                 }
             ]
@@ -109,6 +359,8 @@ class PowerGenerationLearningSystem:
         """発電方法を記録"""
         print(f"\n⚡ 発電方法記録")
         print("="*40)
+        print("💡 入力中に「abort」と入力すると記録を中断できます")
+        print("-" * 40)
         
         # 発電方法の選択
         print("🔌 発電方法を選択してください:")
@@ -140,7 +392,11 @@ class PowerGenerationLearningSystem:
             print(f"   {key}. {method_names[method]}")
         
         try:
-            choice = input(f"選択してください (1-{len(power_methods)}) [1]: ").strip() or "1"
+            choice = input(f"選択してください (1-{len(power_methods)}) [1]: ").strip()
+            if choice.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
+            choice = choice or "1"
             if choice in power_methods:
                 method = power_methods[choice]
             else:
@@ -152,9 +408,22 @@ class PowerGenerationLearningSystem:
         
         # 基本パラメータ入力
         try:
-            capacity = float(input("発電容量 (kW) [1.0]: ").strip() or "1.0")
-            efficiency = float(input("発電効率 (%) [15.0]: ").strip() or "15.0")
+            capacity_input = input("発電容量 (kW) [1.0]: ").strip()
+            if capacity_input.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
+            capacity = float(capacity_input or "1.0")
+            
+            efficiency_input = input("発電効率 (%) [15.0]: ").strip()
+            if efficiency_input.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
+            efficiency = float(efficiency_input or "15.0")
+            
             location = input("設置場所/地域: ").strip()
+            if location.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
             
         except ValueError:
             print("❌ 無効な値です。デフォルト値を使用します。")
@@ -163,15 +432,40 @@ class PowerGenerationLearningSystem:
         # 詳細情報入力
         print(f"\n📝 詳細情報:")
         equipment = input("使用機器/設備 (例: 太陽光パネル、風力タービン): ").strip()
+        if equipment.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
+        
         manufacturer = input("メーカー/ブランド: ").strip()
+        if manufacturer.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
+        
         installation_date = input("設置日 (YYYY-MM-DD): ").strip()
+        if installation_date.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
         
         # 実績データ入力
         print(f"\n📈 実績データ:")
         try:
-            daily_generation = float(input("1日あたりの発電量 (kWh) [5.0]: ").strip() or "5.0")
-            monthly_generation = float(input("1ヶ月あたりの発電量 (kWh) [150.0]: ").strip() or "150.0")
-            cost_per_kwh = float(input("発電コスト (円/kWh) [25.0]: ").strip() or "25.0")
+            daily_gen_input = input("1日あたりの発電量 (kWh) [5.0]: ").strip()
+            if daily_gen_input.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
+            daily_generation = float(daily_gen_input or "5.0")
+            
+            monthly_gen_input = input("1ヶ月あたりの発電量 (kWh) [150.0]: ").strip()
+            if monthly_gen_input.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
+            monthly_generation = float(monthly_gen_input or "150.0")
+            
+            cost_input = input("発電コスト (円/kWh) [25.0]: ").strip()
+            if cost_input.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
+            cost_per_kwh = float(cost_input or "25.0")
             
         except ValueError:
             print("❌ 無効な値です。デフォルト値を使用します。")
@@ -180,8 +474,19 @@ class PowerGenerationLearningSystem:
         # 学習メモ入力
         print(f"\n📚 学習メモ:")
         challenges = input("課題や問題点: ").strip()
+        if challenges.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
+        
         improvements = input("改善点や工夫: ").strip()
+        if improvements.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
+        
         learnings = input("学んだこと: ").strip()
+        if learnings.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
         
         # 結果をまとめる
         result = {
@@ -227,7 +532,7 @@ class PowerGenerationLearningSystem:
         
         # 基本目標の更新
         for goal in self.learning_goals['basic_goals']:
-            if goal['id'] == 'first_power':
+            if goal['id'] == 'first_power_sparkle':
                 goal['current'] = 1
                 goal['status'] = 'active'
             elif goal['id'] == 'multiple_methods':
@@ -238,23 +543,100 @@ class PowerGenerationLearningSystem:
                 goal['current'] = len(unique_methods)
         
         # 再生可能エネルギー目標の更新
-        for goal in self.learning_goals['renewable_goals']:
-            if goal['id'] == 'solar_power' and method == 'solar':
+        for goal in self.learning_goals['renewable_energy_goals']:
+            if goal['id'] == 'wind_conductor' and method == 'wind' and '風速10m/s' in result.get('notes', ''):
+                goal['current'] = 1
+            elif goal['id'] == 'solar_poet' and method == 'solar':
+                # 異なる地点での太陽光発電をカウント
+                unique_locations = set()
+                for gen in self.generation_history:
+                    if gen['method'] == 'solar':
+                        unique_locations.add(gen['location'])
+                goal['current'] = len(unique_locations)
+            elif goal['id'] == 'water_flow_melody' and method == 'hydro':
                 goal['current'] = min(goal['current'] + 1, goal['target'])
-            elif goal['id'] == 'wind_power' and method == 'wind':
-                goal['current'] = min(goal['current'] + 1, goal['target'])
-            elif goal['id'] == 'hydro_power' and method == 'hydro':
-                goal['current'] = min(goal['current'] + 1, goal['target'])
+            elif goal['id'] == 'biomass_breath' and method == 'biomass':
+                goal['current'] = 1
+            elif goal['id'] == 'tidal_explorer' and method == 'tidal':
+                goal['current'] = 1
+            elif goal['id'] == 'geothermal_heartbeat' and method == 'geothermal':
+                goal['current'] = 1
+            elif goal['id'] == 'wave_energy_explorer' and method == 'other' and '波力' in result.get('notes', ''):
+                goal['current'] = 1
         
-        # 高度目標の更新
-        for goal in self.learning_goals['advanced_goals']:
-            if goal['id'] == 'hybrid_system':
-                # 複数方法の組み合わせをチェック
-                methods_in_session = set()
-                for gen in self.generation_history[-3:]:  # 最近3件
-                    methods_in_session.add(gen['method'])
-                if len(methods_in_session) >= 2:
+        # 効率目標の更新
+        for goal in self.learning_goals['efficiency_goals']:
+            if goal['id'] == 'thermoelectric_alchemy' and '廃熱回収' in result.get('notes', ''):
+                goal['current'] = 1
+            elif goal['id'] == 'efficiency_explorer':
+                # 総合発電効率を向上
+                if len(self.generation_history) > 0:
+                    total_efficiency = 0
+                    for gen in self.generation_history:
+                        total_efficiency += gen['efficiency']
+                    average_efficiency = total_efficiency / len(self.generation_history)
+                    if average_efficiency >= 15.0:
+                        goal['current'] = 1
+            elif goal['id'] == 'power_conversion_magician' and result['efficiency'] >= 90.0:
+                goal['current'] = 1
+            elif goal['id'] == 'cooling_efficiency_alchemist' and '冷却効率' in result.get('notes', ''):
+                goal['current'] = 1
+            elif goal['id'] == 'energy_saving_missionary' and 'エネルギーロス削減' in result.get('notes', ''):
+                goal['current'] = 1
+            elif goal['id'] == 'solar_panel_cleaning_master' and method == 'solar' and 'パネル洗浄' in result.get('notes', ''):
+                goal['current'] = 1
+            elif goal['id'] == 'inverter_optimization_artisan' and 'インバータ最適化' in result.get('notes', ''):
+                goal['current'] = 1
+        
+        # 蓄電目標の更新
+        for goal in self.learning_goals['storage_goals']:
+            if goal['id'] == 'storage_guardian' and '蓄電池' in result.get('equipment', ''):
+                goal['current'] = 1
+            elif goal['id'] == 'night_power_pioneer' and '夜間電力供給' in result.get('notes', ''):
+                goal['current'] = 1
+        
+        # グリッド目標の更新
+        for goal in self.learning_goals['grid_goals']:
+            if goal['id'] == 'smart_grid_dream' and '負荷制御' in result.get('notes', ''):
+                goal['current'] = 1
+            elif goal['id'] == 'renewable_mix_master':
+                # 3種以上の発電方法を同時運用
+                recent_methods = set()
+                for gen in self.generation_history[-5:]:  # 最近5件
+                    recent_methods.add(gen['method'])
+                if len(recent_methods) >= 3:
                     goal['current'] = 1
+            elif goal['id'] == 'voltage_stability_guardian' and '電圧制御' in result.get('notes', ''):
+                goal['current'] = 1
+            elif goal['id'] == 'grid_cooperation_strategist' and 'グリッド連携' in result.get('notes', ''):
+                goal['current'] = 1
+        
+        # 環境目標の更新
+        for goal in self.learning_goals['environmental_goals']:
+            if goal['id'] == 'low_environmental_impact_knight' and 'CO2削減' in result.get('notes', ''):
+                goal['current'] = 1
+            elif goal['id'] == 'local_energy_pioneer' and '地域密着' in result.get('notes', ''):
+                goal['current'] = 1
+        
+        # システム目標の更新
+        for goal in self.learning_goals['system_goals']:
+            if goal['id'] == 'self_generation_architect' and '自家発電' in result.get('notes', ''):
+                goal['current'] = 1
+            elif goal['id'] == 'environmental_adaptation_engineer' and ('厳寒' in result.get('notes', '') or '高温' in result.get('notes', '')):
+                goal['current'] = 1
+            elif goal['id'] == 'wind_direction_tracking_poet' and method == 'wind' and '風向追尾' in result.get('notes', ''):
+                goal['current'] = 1
+            elif goal['id'] == 'emergency_backup_planner' and 'バックアップ' in result.get('notes', ''):
+                goal['current'] = 1
+        
+        # 高度解析目標の更新
+        for goal in self.learning_goals['advanced_analysis_goals']:
+            if goal['id'] == 'demand_prediction_magician' and '需要予測' in result.get('notes', ''):
+                goal['current'] = 1
+            elif goal['id'] == 'anomaly_detection_guardian' and '異常検知' in result.get('notes', ''):
+                goal['current'] = 1
+            elif goal['id'] == 'future_energy_visionary' and '革新的技術' in result.get('notes', ''):
+                goal['current'] = 1
     
     def _save_generation_record(self, result: Dict):
         """発電記録をファイルに保存"""
@@ -277,7 +659,12 @@ class PowerGenerationLearningSystem:
         categories = {
             'basic': '📚 基本目標',
             'renewable': '🌱 再生可能エネルギー目標', 
-            'advanced': '🚀 高度目標',
+            'efficiency': '🚀 効率改善',
+            'storage': '🛠️ 蓄電',
+            'grid': '📡 グリッド',
+            'environmental': '🌍 環境',
+            'system': '🛠️ システム',
+            'advanced': '🚀 高度',
             'all': '📋 全ての目標'
         }
         
@@ -315,9 +702,19 @@ class PowerGenerationLearningSystem:
         if category == "basic":
             goals = self.learning_goals['basic_goals']
         elif category == "renewable":
-            goals = self.learning_goals['renewable_goals']
+            goals = self.learning_goals['renewable_energy_goals']
+        elif category == "efficiency":
+            goals = self.learning_goals['efficiency_goals']
+        elif category == "storage":
+            goals = self.learning_goals['storage_goals']
+        elif category == "grid":
+            goals = self.learning_goals['grid_goals']
+        elif category == "environmental":
+            goals = self.learning_goals['environmental_goals']
+        elif category == "system":
+            goals = self.learning_goals['system_goals']
         elif category == "advanced":
-            goals = self.learning_goals['advanced_goals']
+            goals = self.learning_goals['advanced_analysis_goals']
         else:
             return
         
@@ -348,7 +745,7 @@ class PowerGenerationLearningSystem:
         """学習目標の完了をチェック"""
         completed_goals = []
         
-        for category in ['basic_goals', 'renewable_goals', 'advanced_goals']:
+        for category in ['basic_goals', 'renewable_energy_goals', 'efficiency_goals', 'storage_goals', 'grid_goals', 'environmental_goals', 'system_goals', 'advanced_analysis_goals']:
             for goal in self.learning_goals[category]:
                 if goal['status'] == 'active' and goal['current'] >= goal['target']:
                     goal['status'] = 'completed'

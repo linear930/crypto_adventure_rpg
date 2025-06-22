@@ -8,6 +8,7 @@ Crypto Adventure RPG - メインファイル
 import json
 import time
 import random
+import os
 from pathlib import Path
 from typing import Dict, List, Optional
 from datetime import datetime, timedelta
@@ -36,6 +37,15 @@ class CryptoAdventureRPG:
         self.assets_dir.mkdir(exist_ok=True)
         self.save_dir.mkdir(exist_ok=True)
         
+        # 各システム用のディレクトリを作成
+        (self.data_dir / "cea_calculation").mkdir(exist_ok=True)
+        (self.data_dir / "power_generation").mkdir(exist_ok=True)
+        (self.data_dir / "optics_observations").mkdir(exist_ok=True)
+        (self.data_dir / "mining_activities").mkdir(exist_ok=True)
+        
+        # 必要な履歴ファイルを初期化
+        self._initialize_history_files()
+        
         self.game_engine = GameEngine(self.data_dir, self.assets_dir, self.save_dir)
         
         # 各システムの初期化
@@ -50,26 +60,54 @@ class CryptoAdventureRPG:
         self.actions_remaining = 3
         self.last_action_time = None
         
+    def _initialize_history_files(self):
+        """履歴ファイルを初期化"""
+        # CEA計算履歴ファイル
+        cea_file = self.data_dir / "cea_calculation" / "cea_calculations.json"
+        if not cea_file.exists():
+            with open(cea_file, 'w', encoding='utf-8') as f:
+                json.dump({"calculations": []}, f, ensure_ascii=False, indent=2)
+        
+        # 発電記録履歴ファイル
+        power_file = self.data_dir / "power_generation" / "power_generations.json"
+        if not power_file.exists():
+            with open(power_file, 'w', encoding='utf-8') as f:
+                json.dump({"generations": []}, f, ensure_ascii=False, indent=2)
+        
+        # 観測記録履歴ファイル
+        optics_file = self.data_dir / "optics_observations" / "optics_observations.json"
+        if not optics_file.exists():
+            with open(optics_file, 'w', encoding='utf-8') as f:
+                json.dump({"observations": []}, f, ensure_ascii=False, indent=2)
+        
+        # マイニング履歴ファイル
+        mining_file = self.data_dir / "mining_activities" / "mining_sessions.json"
+        if not mining_file.exists():
+            with open(mining_file, 'w', encoding='utf-8') as f:
+                json.dump({"sessions": []}, f, ensure_ascii=False, indent=2)
+        
     def _load_config(self) -> Dict:
         """設定ファイルを読み込み（非推奨 - ConfigManagerを使用）"""
         return self.config_manager.load_config()
     
     def start_game(self):
         """ゲーム開始"""
-        game_name = self.config.get('game_name', 'Crypto Adventure RPG')
-        version = self.config.get('version', '2.0.0')
+        print("🚀 Crypto Adventure RPG へようこそ！")
+        print("="*50)
         
-        print(f"\n🎮 {game_name} v{version}")
-        print("="*60)
-        print("🌍 現実連動型暗号通貨アドベンチャーゲーム")
-        print("💎 実際の暗号通貨マイニング、CEA計算、発電所設計、天体観測で冒険しよう！")
-        print("="*60)
+        # 設定読み込み
+        self.config = self._load_config()
         
-        # ゲーム状態の読み込み
+        # ゲーム状態読み込み
         self._load_game_state()
         
-        # メインメニュー
+        # メインメニュー表示
         self._show_main_menu()
+        
+        # ゲーム終了時に自動保存
+        print("\n💾 ゲームを保存中...")
+        self._save_game_state()
+        print("✅ ゲームを保存しました")
     
     def _load_game_state(self):
         """ゲーム状態を読み込み"""
@@ -110,6 +148,11 @@ class CryptoAdventureRPG:
     
     def _save_game_state(self):
         """ゲーム状態を保存"""
+        # GameEngineの状態を保存（これがメインのセーブデータ）
+        self.game_engine.save_state()
+        self.game_engine.save_wallet()
+        
+        # 旧式のセーブファイルも更新（互換性のため）
         save_file = Path("data/game_state.json")
         save_file.parent.mkdir(exist_ok=True)
         
@@ -117,7 +160,10 @@ class CryptoAdventureRPG:
             'current_day': self.current_day,
             'actions_remaining': self.actions_remaining,
             'last_action_time': datetime.now().isoformat(),
-            'save_time': datetime.now().isoformat()
+            'save_time': datetime.now().isoformat(),
+            'experience': self.game_engine.experience,
+            'crypto_balance': self.game_engine.wallet['crypto_balance'],
+            'total_actions': self.game_engine.state.get('total_actions', 0)
         }
         
         try:
@@ -129,6 +175,9 @@ class CryptoAdventureRPG:
     def _show_main_menu(self):
         """メインメニューを表示"""
         while True:
+            # 画面をクリア（Windows用）
+            os.system('cls' if os.name == 'nt' else 'clear')
+            
             print(f"\n🏠 メインメニュー (Day {self.current_day})")
             print("="*50)
             print(f"💎 経験値: {self.game_engine.experience}")
@@ -154,36 +203,48 @@ class CryptoAdventureRPG:
                 
                 if choice == "1":
                     self._cea_menu()
+                    input("\n🔙 メインメニューに戻るにはEnterを押してください...")
                 elif choice == "2":
                     self._power_menu()
+                    input("\n🔙 メインメニューに戻るにはEnterを押してください...")
                 elif choice == "3":
                     self._optics_menu()
+                    input("\n🔙 メインメニューに戻るにはEnterを押してください...")
                 elif choice == "4":
                     self._mining_menu()
+                    input("\n🔙 メインメニューに戻るにはEnterを押してください...")
                 elif choice == "5":
                     self._power_missions_menu()
+                    input("\n🔙 メインメニューに戻るにはEnterを押してください...")
                 elif choice == "6":
                     self._statistics_menu()
+                    input("\n🔙 メインメニューに戻るにはEnterを押してください...")
                 elif choice == "7":
                     self._learning_goals_menu()
+                    input("\n🔙 メインメニューに戻るにはEnterを押してください...")
                 elif choice == "8":
                     self._bgm_menu()
+                    input("\n🔙 メインメニューに戻るにはEnterを押してください...")
                 elif choice == "9":
                     self._save_game_state()
                     print("✅ ゲームを保存しました")
+                    input("\n🔙 メインメニューに戻るにはEnterを押してください...")
                 elif choice == "10":
                     self._load_game_menu()
+                    input("\n🔙 メインメニューに戻るにはEnterを押してください...")
                 elif choice == "11":
                     print("👋 ゲームを終了します。お疲れ様でした！")
                     break
                 else:
                     print("❌ 無効な選択です")
+                    input("\n🔙 メインメニューに戻るにはEnterを押してください...")
                     
             except KeyboardInterrupt:
                 print("\n👋 ゲームを終了します")
                 break
             except Exception as e:
                 print(f"❌ エラーが発生しました: {e}")
+                input("\n🔙 メインメニューに戻るにはEnterを押してください...")
     
     def _cea_menu(self):
         """CEA計算メニュー"""
@@ -205,6 +266,9 @@ class CryptoAdventureRPG:
             if choice == "1":
                 result = self.cea_system.record_cea_calculation()
                 if result:
+                    # 履歴をGameEngineに保存
+                    self.game_engine.add_cea_result(result)
+                    
                     self._consume_action()
                     # 学習目標の完了チェック
                     completed_goals = self.cea_system.check_goal_completion()
@@ -258,6 +322,9 @@ class CryptoAdventureRPG:
             if choice == "1":
                 result = self.power_system.record_power_generation()
                 if result:
+                    # 履歴をGameEngineに保存
+                    self.game_engine.add_power_plant_result(result)
+                    
                     self._consume_action()
                     # 学習目標の完了チェック
                     completed_goals = self.power_system.check_goal_completion()
@@ -313,6 +380,9 @@ class CryptoAdventureRPG:
             if choice == "1":
                 result = self.optics_system.record_astronomical_observation()
                 if result:
+                    # 履歴をGameEngineに保存
+                    self.game_engine.add_optics_observation(result)
+                    
                     self._consume_action()
                     # 学習目標の完了チェック
                     completed_goals = self.optics_system.check_goal_completion()
@@ -356,19 +426,27 @@ class CryptoAdventureRPG:
         print(f"\n⛏️  Moneroマイニング記録・学習システム")
         print("="*40)
         print("1. 📝 マイニングセッションを記録")
-        print("2. 🎯 学習目標を確認")
-        print("3. 📚 マイニング履歴を表示")
-        print("4. 📊 統計を表示")
-        print("5. 📖 マイニングガイド")
-        print("6. 🔍 システム互換性チェック")
-        print("7. 🔙 戻る")
+        print("2. ⚙️  マイニング設定")
+        print("3. 🚀 マイニング開始")
+        print("4. 🛑 マイニング停止")
+        print("5. 📊 マイニング状態")
+        print("6. 🎯 学習目標を確認")
+        print("7. 📚 マイニング履歴を表示")
+        print("8. 📈 統計を表示")
+        print("9. 📖 マイニングガイド")
+        print("10. 🔍 システム互換性チェック")
+        print("11. 📦 cpuminer-optインストールガイド")
+        print("12. 🔙 戻る")
         
         try:
-            choice = input("選択してください (1-7): ").strip()
+            choice = input("選択してください (1-12): ").strip()
             
             if choice == "1":
                 result = self.miner.record_mining_session()
                 if result:
+                    # 履歴をGameEngineに保存
+                    self.game_engine.add_mining_result(result)
+                    
                     self._consume_action()
                     # 学習目標の完了チェック
                     completed_goals = self.miner.check_goal_completion()
@@ -380,10 +458,29 @@ class CryptoAdventureRPG:
                         print(f"   💰 Crypto +{goal['reward']['crypto']:.6f} XMR")
                         
             elif choice == "2":
-                self.miner.show_learning_goals()
+                config = self.miner.configure_mining()
+                if config:
+                    print("✅ マイニング設定を保存しました")
+                    
             elif choice == "3":
-                self.miner.show_mining_history()
+                if self.miner.start_mining():
+                    print("✅ マイニングを開始しました")
+                    print("💡 マイニングを停止するには、メニューから「マイニング停止」を選択してください")
+                    
             elif choice == "4":
+                if self.miner.stop_mining():
+                    print("✅ マイニングを停止しました")
+                    
+            elif choice == "5":
+                self.miner.show_mining_status()
+                
+            elif choice == "6":
+                self.miner.show_learning_goals()
+                
+            elif choice == "7":
+                self.miner.show_mining_history()
+                
+            elif choice == "8":
                 stats = self.miner.get_mining_statistics()
                 if stats['status'] == 'success':
                     print(f"\n📊 マイニング統計:")
@@ -395,11 +492,29 @@ class CryptoAdventureRPG:
                     print(f"   使用ハードウェア数: {stats['unique_hardware']}")
                 else:
                     print("📝 マイニングデータがありません")
-            elif choice == "5":
+                    
+            elif choice == "9":
                 self.miner.show_mining_guide()
-            elif choice == "6":
-                self.miner.check_system_compatibility()
-            elif choice == "7":
+                
+            elif choice == "10":
+                compatibility = self.miner.check_system_compatibility()
+                print(f"\n🔍 システム互換性チェック:")
+                print(f"   OS: {compatibility['os']}")
+                print(f"   CPU: {compatibility['cpu_cores']}コア")
+                print(f"   RAM: {compatibility['ram_gb']:.1f} GB")
+                
+                if compatibility['available_miners']:
+                    print(f"   ✅ 利用可能なマイニングソフト: {', '.join(compatibility['available_miners'])}")
+                else:
+                    print(f"   ❌ 利用可能なマイニングソフト: なし")
+                    print(f"   📦 インストールが必要です")
+                
+                print(f"   🎯 マイニングサポート: {'✅ 可能' if compatibility['mining_supported'] else '❌ 不可能'}")
+                
+            elif choice == "11":
+                self.miner.install_cpuminer_guide()
+                
+            elif choice == "12":
                 return
             else:
                 print("❌ 無効な選択です")
@@ -544,6 +659,11 @@ class CryptoAdventureRPG:
                 # GameEngineの状態と同期
                 self.current_day = self.game_engine.state.get('current_day', 1)
                 self.actions_remaining = self.game_engine.state.get('actions_remaining', 3)
+                
+                # ゲーム状態を自動保存
+                self.game_engine.save_state()
+                self.game_engine.save_wallet()
+                
                 print(f"⚡ 行動を実行しました (残り: {self.actions_remaining}/3)")
             else:
                 print("❌ 行動回数が不足しています")
@@ -609,16 +729,22 @@ class CryptoAdventureRPG:
         print("="*40)
         print("1. 🔄 現在のセーブデータを再読み込み")
         print("2. 📊 セーブデータ情報を表示")
-        print("3. 🔙 戻る")
+        print("3. 🔍 セーブデータ整合性チェック")
+        print("4. 🔧 セーブデータ自動修復")
+        print("5. 🔙 戻る")
         
         try:
-            choice = input("選択してください (1-3): ").strip()
+            choice = input("選択してください (1-5): ").strip()
             
             if choice == "1":
                 self._reload_game_state()
             elif choice == "2":
                 self._show_save_data_info()
             elif choice == "3":
+                self._check_save_data_integrity()
+            elif choice == "4":
+                self._repair_save_data()
+            elif choice == "5":
                 return
             else:
                 print("❌ 無効な選択です")
@@ -634,6 +760,9 @@ class CryptoAdventureRPG:
         self.game_engine.load_state()
         self.game_engine.load_wallet()
         
+        # 履歴データの同期
+        self._sync_history_data()
+        
         # main.pyの状態をGameEngineと同期
         self.current_day = self.game_engine.state.get('current_day', 1)
         self.actions_remaining = self.game_engine.state.get('actions_remaining', 3)
@@ -643,6 +772,65 @@ class CryptoAdventureRPG:
         print(f"   ⚡ 残り行動: {self.actions_remaining}/3")
         print(f"   💰 Crypto残高: {self.game_engine.wallet['crypto_balance']:.6f} XMR")
         print(f"   💎 経験値: {self.game_engine.experience}")
+        
+        # 履歴情報も表示
+        cea_count = len(self.game_engine.wallet.get('cea_calculations', []))
+        power_count = len(self.game_engine.wallet.get('plant_designs', []))
+        optics_count = len(self.game_engine.wallet.get('optics_observations', []))
+        mining_count = len(self.game_engine.wallet.get('mining_history', []))
+        
+        print(f"   📊 履歴: CEA{cea_count}回, 発電{power_count}回, 観測{optics_count}回, マイニング{mining_count}回")
+    
+    def _sync_history_data(self):
+        """履歴データを同期"""
+        try:
+            # CEA計算履歴の同期
+            cea_file = self.data_dir / "cea_calculation" / "cea_calculations.json"
+            if cea_file.exists():
+                with open(cea_file, 'r', encoding='utf-8') as f:
+                    cea_data = json.load(f)
+                    if 'calculations' in cea_data:
+                        self.game_engine.wallet['cea_calculations'] = cea_data['calculations']
+            
+            # 発電記録履歴の同期
+            power_file = self.data_dir / "power_generation" / "power_generations.json"
+            if power_file.exists():
+                with open(power_file, 'r', encoding='utf-8') as f:
+                    power_data = json.load(f)
+                    if 'generations' in power_data:
+                        self.game_engine.wallet['plant_designs'] = power_data['generations']
+            
+            # 観測記録履歴の同期
+            optics_file = self.data_dir / "optics_observations" / "optics_observations.json"
+            if optics_file.exists():
+                with open(optics_file, 'r', encoding='utf-8') as f:
+                    optics_data = json.load(f)
+                    if 'observations' in optics_data:
+                        self.game_engine.wallet['optics_observations'] = optics_data['observations']
+            
+            # マイニング履歴の同期
+            mining_file = self.data_dir / "mining_activities" / "mining_sessions.json"
+            if mining_file.exists():
+                with open(mining_file, 'r', encoding='utf-8') as f:
+                    mining_data = json.load(f)
+                    if 'sessions' in mining_data:
+                        self.game_engine.wallet['mining_history'] = mining_data['sessions']
+            
+            # 総行動回数を更新
+            total_activities = (
+                len(self.game_engine.wallet.get('cea_calculations', [])) +
+                len(self.game_engine.wallet.get('plant_designs', [])) +
+                len(self.game_engine.wallet.get('optics_observations', [])) +
+                len(self.game_engine.wallet.get('mining_history', []))
+            )
+            self.game_engine.state['total_actions'] = total_activities
+            
+            # 同期されたデータを保存
+            self.game_engine.save_wallet()
+            self.game_engine.save_state()
+            
+        except Exception as e:
+            print(f"⚠️ 履歴データ同期エラー: {e}")
     
     def _show_save_data_info(self):
         """セーブデータ情報を表示"""
@@ -674,6 +862,104 @@ class CryptoAdventureRPG:
         
         if 'game_start_date' in self.game_engine.state:
             print(f"🎮 ゲーム開始: {self.game_engine.state['game_start_date'][:19]}")
+    
+    def _check_save_data_integrity(self):
+        """セーブデータの整合性をチェック"""
+        print(f"\n🔍 セーブデータ整合性チェック")
+        print("="*40)
+        
+        issues = []
+        
+        # GameEngineの状態チェック
+        if not hasattr(self.game_engine, 'state') or not self.game_engine.state:
+            issues.append("❌ GameEngineの状態が読み込まれていません")
+        
+        if not hasattr(self.game_engine, 'wallet') or not self.game_engine.wallet:
+            issues.append("❌ GameEngineのウォレットが読み込まれていません")
+        
+        # 履歴データの整合性チェック
+        cea_calculations = self.game_engine.wallet.get('cea_calculations', [])
+        plant_designs = self.game_engine.wallet.get('plant_designs', [])
+        optics_observations = self.game_engine.wallet.get('optics_observations', [])
+        mining_history = self.game_engine.wallet.get('mining_history', [])
+        
+        total_activities = len(cea_calculations) + len(plant_designs) + len(optics_observations) + len(mining_history)
+        total_actions = self.game_engine.state.get('total_actions', 0)
+        
+        if total_activities != total_actions:
+            issues.append(f"⚠️ 行動回数の不整合: 履歴{total_activities}回 vs 記録{total_actions}回")
+        
+        # 各システムのファイル存在チェック
+        cea_file = Path("data/cea_calculation/cea_calculations.json")
+        power_file = Path("data/power_generation/power_generations.json")
+        optics_file = Path("data/optics_observations/optics_observations.json")
+        
+        if not cea_file.exists():
+            issues.append("⚠️ CEA計算ファイルが見つかりません")
+        if not power_file.exists():
+            issues.append("⚠️ 発電記録ファイルが見つかりません")
+        if not optics_file.exists():
+            issues.append("⚠️ 観測記録ファイルが見つかりません")
+        
+        # 結果表示
+        if issues:
+            print("🔍 発見された問題:")
+            for issue in issues:
+                print(f"   {issue}")
+            print(f"\n💡 推奨対応:")
+            print("   1. セーブデータを再読み込みしてください")
+            print("   2. 問題が続く場合は、ゲームを再起動してください")
+        else:
+            print("✅ セーブデータに問題は見つかりませんでした")
+            print(f"   📊 総行動回数: {total_actions}回")
+            print(f"   📈 履歴データ: {total_activities}件")
+        
+        print(f"\n📊 詳細情報:")
+        print(f"   🚀 CEA計算: {len(cea_calculations)}回")
+        print(f"   ⚡ 発電記録: {len(plant_designs)}回")
+        print(f"   🔭 観測記録: {len(optics_observations)}回")
+        print(f"   ⛏️ マイニング: {len(mining_history)}回")
+    
+    def _repair_save_data(self):
+        """セーブデータを自動修復"""
+        print(f"\n🔧 セーブデータ自動修復")
+        print("="*40)
+        
+        repaired = False
+        
+        # 必要なファイルを初期化
+        self._initialize_history_files()
+        print("✅ 履歴ファイルを初期化しました")
+        
+        # 履歴データを同期
+        self._sync_history_data()
+        print("✅ 履歴データを同期しました")
+        
+        # 総行動回数を修正
+        total_activities = (
+            len(self.game_engine.wallet.get('cea_calculations', [])) +
+            len(self.game_engine.wallet.get('plant_designs', [])) +
+            len(self.game_engine.wallet.get('optics_observations', [])) +
+            len(self.game_engine.wallet.get('mining_history', []))
+        )
+        
+        if self.game_engine.state.get('total_actions', 0) != total_activities:
+            self.game_engine.state['total_actions'] = total_activities
+            print(f"✅ 総行動回数を修正しました: {total_activities}回")
+            repaired = True
+        
+        # 修復されたデータを保存
+        self.game_engine.save_state()
+        self.game_engine.save_wallet()
+        
+        if repaired:
+            print("✅ セーブデータの修復が完了しました")
+        else:
+            print("ℹ️ 修復が必要な問題は見つかりませんでした")
+        
+        # 修復後の整合性チェック
+        print("\n🔍 修復後の整合性チェック:")
+        self._check_save_data_integrity()
 
 def main():
     """メイン関数"""
