@@ -15,14 +15,25 @@ from datetime import datetime
 class CEALearningSystem:
     def __init__(self, config: Dict):
         self.config = config
-        self.cea_dir = Path(config.get('output_dir', 'data/cea_learning'))
+        self.cea_dir = Path("data/cea_calculation")
         self.cea_dir.mkdir(exist_ok=True)
         
-        # CEA計算履歴
-        self.calculation_history = []
+        # 履歴ファイルの初期化
+        self.history_file = self.cea_dir / "cea_calculations.json"
+        self.calculation_history = self._load_calculation_history()
         
-        # 学習目標
+        # 学習目標の初期化
         self.learning_goals = self._initialize_learning_goals()
+        
+        # GameEngineへの参照を追加
+        self.game_engine = None
+        
+        # 推進剤リストの初期化
+        self.propellants = self._initialize_propellants()
+        
+    def set_game_engine(self, game_engine):
+        """GameEngineへの参照を設定"""
+        self.game_engine = game_engine
         
     def _initialize_learning_goals(self) -> Dict:
         """学習目標の初期化"""
@@ -108,6 +119,76 @@ class CEALearningSystem:
                     'target': 1,
                     'current': 0,
                     'reward': {'experience': 320, 'crypto': 0.0032},
+                    'status': 'active'
+                },
+                {
+                    'id': 'udmh_master',
+                    'name': 'UDMHマスター',
+                    'description': 'UDMHを使用した計算を実行',
+                    'type': 'achievement',
+                    'target': 1,
+                    'current': 0,
+                    'reward': {'experience': 350, 'crypto': 0.0035},
+                    'status': 'active'
+                },
+                {
+                    'id': 'fluorine_explorer',
+                    'name': 'フッ素の探求者',
+                    'description': 'F2を使用した超高エネルギー計算を実行',
+                    'type': 'achievement',
+                    'target': 1,
+                    'current': 0,
+                    'reward': {'experience': 500, 'crypto': 0.005},
+                    'status': 'active'
+                },
+                {
+                    'id': 'high_energy_propellant_expert',
+                    'name': '高エネルギー推進剤エキスパート',
+                    'description': 'F2、ClF3、ClF5などの高エネルギー酸化剤を使用',
+                    'type': 'collection',
+                    'target': 3,
+                    'current': 0,
+                    'reward': {'experience': 600, 'crypto': 0.006},
+                    'status': 'active'
+                },
+                {
+                    'id': 'hydrazine_family_explorer',
+                    'name': 'ヒドラジン族の探求者',
+                    'description': 'UDMH、MMH、N2H4の計算を実行',
+                    'type': 'collection',
+                    'target': 3,
+                    'current': 0,
+                    'reward': {'experience': 450, 'crypto': 0.0045},
+                    'status': 'active'
+                },
+                {
+                    'id': 'hydrocarbon_master',
+                    'name': '炭化水素マスター',
+                    'description': 'C2H6からC50H102までの炭化水素燃料を試行',
+                    'type': 'collection',
+                    'target': 10,
+                    'current': 0,
+                    'reward': {'experience': 400, 'crypto': 0.004},
+                    'status': 'active'
+                },
+                {
+                    'id': 'concentrated_oxidizer_expert',
+                    'name': '高濃度酸化剤エキスパート',
+                    'description': '90%以上の高濃度酸化剤を使用',
+                    'type': 'collection',
+                    'target': 5,
+                    'current': 0,
+                    'reward': {'experience': 350, 'crypto': 0.0035},
+                    'status': 'active'
+                },
+                {
+                    'id': 'dangerous_propellant_researcher',
+                    'name': '危険推進剤研究者',
+                    'description': 'F2、ClF3、ClF5などの危険な推進剤を研究',
+                    'type': 'collection',
+                    'target': 3,
+                    'current': 0,
+                    'reward': {'experience': 700, 'crypto': 0.007},
                     'status': 'active'
                 }
             ],
@@ -365,45 +446,283 @@ class CEALearningSystem:
             ]
         }
     
+    def _initialize_propellants(self) -> Dict:
+        """推進剤リストの初期化"""
+        return {
+            'fuels': {
+                'LH2': {'name': '液体水素', 'description': '高比推力、低密度'},
+                'RP-1': {'name': 'ケロシン', 'description': '高密度、安定性良好'},
+                'CH4': {'name': 'メタン', 'description': '再利用可能ロケット向け'},
+                'C2H6': {'name': 'エタン', 'description': 'メタンより高密度'},
+                'UDMH': {'name': '非対称ジメチルヒドラジン', 'description': '高エネルギー密度、自己着火性'},
+                'MMH': {'name': 'モノメチルヒドラジン', 'description': '自己着火性、高信頼性'},
+                'N2H4': {'name': 'ヒドラジン', 'description': '単推進剤としても使用可能'},
+                'JP-8': {'name': 'ジェット燃料', 'description': '軍用燃料、高密度'},
+                'JP-10': {'name': '高密度燃料', 'description': '高密度、高エネルギー'},
+                'C2H4': {'name': 'エチレン', 'description': '高エネルギー密度'},
+                'C3H8': {'name': 'プロパン', 'description': 'LPG燃料'},
+                'C4H10': {'name': 'ブタン', 'description': '高密度炭化水素'},
+                'C2H5OH': {'name': 'エタノール', 'description': '再生可能燃料'},
+                'C3H6O': {'name': 'アセトン', 'description': '高エネルギー密度'},
+                'C6H6': {'name': 'ベンゼン', 'description': '芳香族炭化水素'},
+                'C8H18': {'name': 'オクタン', 'description': '高密度燃料'},
+                'C10H22': {'name': 'デカン', 'description': '高密度炭化水素'},
+                'C12H26': {'name': 'ドデカン', 'description': '高密度燃料'},
+                'C14H30': {'name': 'テトラデカン', 'description': '高密度炭化水素'},
+                'C16H34': {'name': 'ヘキサデカン', 'description': '高密度燃料'},
+                'C18H38': {'name': 'オクタデカン', 'description': '高密度炭化水素'},
+                'C20H42': {'name': 'エイコサン', 'description': '高密度燃料'},
+                'C22H46': {'name': 'ドコサン', 'description': '高密度炭化水素'},
+                'C24H50': {'name': 'テトラコサン', 'description': '高密度燃料'},
+                'C26H54': {'name': 'ヘキサコサン', 'description': '高密度炭化水素'},
+                'C28H58': {'name': 'オクタコサン', 'description': '高密度燃料'},
+                'C30H62': {'name': 'トリアコンタン', 'description': '高密度炭化水素'},
+                'C32H66': {'name': 'ドトリアコンタン', 'description': '高密度燃料'},
+                'C34H70': {'name': 'テトラトリアコンタン', 'description': '高密度炭化水素'},
+                'C36H74': {'name': 'ヘキサトリアコンタン', 'description': '高密度燃料'},
+                'C38H78': {'name': 'オクタトリアコンタン', 'description': '高密度炭化水素'},
+                'C40H82': {'name': 'テトラコンタン', 'description': '高密度燃料'},
+                'C42H86': {'name': 'ドテトラコンタン', 'description': '高密度炭化水素'},
+                'C44H90': {'name': 'テトラテトラコンタン', 'description': '高密度燃料'},
+                'C46H94': {'name': 'ヘキサテトラコンタン', 'description': '高密度炭化水素'},
+                'C48H98': {'name': 'オクタテトラコンタン', 'description': '高密度燃料'},
+                'C50H102': {'name': 'ペンタコンタン', 'description': '高密度炭化水素'}
+            },
+            'oxidizers': {
+                'LOX': {'name': '液体酸素', 'description': '標準的酸化剤、高効率'},
+                'N2O4': {'name': '四酸化二窒素', 'description': '自己着火性、高密度'},
+                'H2O2': {'name': '過酸化水素', 'description': '単推進剤としても使用可能'},
+                'N2O': {'name': '亜酸化窒素', 'description': 'ハイブリッドロケット向け'},
+                'F2': {'name': 'フッ素', 'description': '最高性能、極めて危険'},
+                'ClF3': {'name': '三フッ化塩素', 'description': '高エネルギー、腐食性'},
+                'ClF5': {'name': '五フッ化塩素', 'description': '高エネルギー、腐食性'},
+                'OF2': {'name': '二フッ化酸素', 'description': '高エネルギー、危険'},
+                'N2F4': {'name': '四フッ化二窒素', 'description': '高エネルギー、自己着火性'},
+                'CIF3': {'name': '三フッ化塩素', 'description': '高エネルギー、腐食性'},
+                'CIF5': {'name': '五フッ化塩素', 'description': '高エネルギー、腐食性'},
+                'NF3': {'name': '三フッ化窒素', 'description': '高エネルギー、危険'},
+                'N2O3': {'name': '三酸化二窒素', 'description': '高エネルギー、不安定'},
+                'N2O5': {'name': '五酸化二窒素', 'description': '高エネルギー、不安定'},
+                'HNO3': {'name': '硝酸', 'description': '高密度、腐食性'},
+                'N2H4': {'name': 'ヒドラジン', 'description': '単推進剤としても使用可能'},
+                'H2O2_90': {'name': '90%過酸化水素', 'description': '高濃度、高エネルギー'},
+                'H2O2_98': {'name': '98%過酸化水素', 'description': '超高濃度、高エネルギー'},
+                'H2O2_99': {'name': '99%過酸化水素', 'description': '超高濃度、高エネルギー'},
+                'H2O2_100': {'name': '100%過酸化水素', 'description': '純粋、高エネルギー'},
+                'N2O4_90': {'name': '90%四酸化二窒素', 'description': '高濃度、高エネルギー'},
+                'N2O4_95': {'name': '95%四酸化二窒素', 'description': '超高濃度、高エネルギー'},
+                'N2O4_98': {'name': '98%四酸化二窒素', 'description': '超高濃度、高エネルギー'},
+                'N2O4_99': {'name': '99%四酸化二窒素', 'description': '純粋、高エネルギー'},
+                'N2O4_100': {'name': '100%四酸化二窒素', 'description': '純粋、高エネルギー'},
+                'LOX_90': {'name': '90%液体酸素', 'description': '高濃度、高エネルギー'},
+                'LOX_95': {'name': '95%液体酸素', 'description': '超高濃度、高エネルギー'},
+                'LOX_98': {'name': '98%液体酸素', 'description': '超高濃度、高エネルギー'},
+                'LOX_99': {'name': '99%液体酸素', 'description': '純粋、高エネルギー'},
+                'LOX_100': {'name': '100%液体酸素', 'description': '純粋、高エネルギー'}
+            }
+        }
+    
+    def show_propellant_list(self, propellant_type: str = "all"):
+        """推進剤リストを表示"""
+        print(f"\n🚀 推進剤リスト")
+        print("="*50)
+        
+        if propellant_type in ["all", "fuels"]:
+            print("\n🔥 燃料:")
+            print("-" * 30)
+            for i, (key, info) in enumerate(self.propellants['fuels'].items(), 1):
+                print(f"{i:2d}. {key:12} - {info['name']:15} ({info['description']})")
+        
+        if propellant_type in ["all", "oxidizers"]:
+            print("\n💨 酸化剤:")
+            print("-" * 30)
+            for i, (key, info) in enumerate(self.propellants['oxidizers'].items(), 1):
+                print(f"{i:2d}. {key:12} - {info['name']:15} ({info['description']})")
+        
+        print("\n💡 ヒント: 番号を入力するか、直接化学式を入力してください")
+        print("💡 例: 1 または LH2 または custom")
+    
+    def select_propellant(self, propellant_type: str) -> str:
+        """推進剤を選択"""
+        propellants = self.propellants['fuels'] if propellant_type == 'fuel' else self.propellants['oxidizers']
+        
+        while True:
+            choice = input(f"{'燃料' if propellant_type == 'fuel' else '酸化剤'}を選択してください (番号/化学式/custom): ").strip()
+            
+            if choice.lower() == "abort":
+                return None
+            if choice.lower() == "back":
+                return "back"
+            
+            # 番号で選択
+            if choice.isdigit():
+                index = int(choice) - 1
+                if 0 <= index < len(propellants):
+                    return list(propellants.keys())[index]
+                else:
+                    print("❌ 無効な番号です")
+                    continue
+            
+            # 直接化学式入力
+            if choice.upper() in propellants:
+                return choice.upper()
+            
+            # カスタム入力
+            if choice.lower() == "custom":
+                custom = input(f"カスタム{'燃料' if propellant_type == 'fuel' else '酸化剤'}の化学式を入力: ").strip()
+                if custom.lower() == "abort":
+                    return None
+                if custom.lower() == "back":
+                    continue
+                return custom.upper()
+            
+            print("❌ 無効な選択です。番号、化学式、または 'custom' を入力してください")
+    
     def record_cea_calculation(self) -> Dict:
         """CEA計算結果を記録"""
         print(f"\n🚀 CEA計算結果記録")
         print("="*40)
         print("💡 入力中に「abort」と入力すると記録を中断できます")
+        print("💡 入力中に「back」と入力すると一つ前の入力に戻れます")
+        print("💡 入力中に「list」と入力すると推進剤リストを表示します")
         print("-" * 40)
         
         # 基本パラメータ入力
         print("📊 計算パラメータを入力してください:")
         
         try:
-            fuel = input("燃料 (例: LH2, RP-1, CH4, C2H6) [LH2]: ").strip()
-            if fuel.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
+            # 燃料選択
+            while True:
+                fuel_input = input("燃料を選択してください (list/番号/化学式/custom) [LH2]: ").strip()
+                if fuel_input.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
+                if fuel_input.lower() == "back":
+                    print("🔄 最初の入力なので戻る場所がありません。記録を中断します。")
+                    return None
+                if fuel_input.lower() == "list":
+                    self.show_propellant_list("fuels")
+                    continue
+                
+                fuel = self.select_propellant('fuel')
+                if fuel is None:
+                    print("❌ 記録を中断しました")
+                    return None
+                if fuel == "back":
+                    continue
+                break
+            
             fuel = fuel or "LH2"
             
-            oxidizer = input("酸化剤 (例: LOX, N2O4, H2O2) [LOX]: ").strip()
-            if oxidizer.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
+            # 酸化剤選択
+            while True:
+                oxidizer_input = input("酸化剤を選択してください (list/番号/化学式/custom) [LOX]: ").strip()
+                if oxidizer_input.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
+                if oxidizer_input.lower() == "back":
+                    print("🔄 一つ前の入力に戻ります")
+                    # 燃料選択に戻る
+                    while True:
+                        fuel_input = input("燃料を選択してください (list/番号/化学式/custom) [LH2]: ").strip()
+                        if fuel_input.lower() == "abort":
+                            print("❌ 記録を中断しました")
+                            return None
+                        if fuel_input.lower() == "list":
+                            self.show_propellant_list("fuels")
+                            continue
+                        
+                        fuel = self.select_propellant('fuel')
+                        if fuel is None:
+                            print("❌ 記録を中断しました")
+                            return None
+                        if fuel == "back":
+                            continue
+                        break
+                    
+                    fuel = fuel or "LH2"
+                    oxidizer_input = input("酸化剤を選択してください (list/番号/化学式/custom) [LOX]: ").strip()
+                    if oxidizer_input.lower() == "abort":
+                        print("❌ 記録を中断しました")
+                        return None
+                
+                if oxidizer_input.lower() == "list":
+                    self.show_propellant_list("oxidizers")
+                    continue
+                
+                oxidizer = self.select_propellant('oxidizer')
+                if oxidizer is None:
+                    print("❌ 記録を中断しました")
+                    return None
+                if oxidizer == "back":
+                    continue
+                break
+            
             oxidizer = oxidizer or "LOX"
             
             Pc_input = input("燃焼室圧力 (bar) [50]: ").strip()
             if Pc_input.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
+            if Pc_input.lower() == "back":
+                print("🔄 一つ前の入力に戻ります")
+                # 酸化剤選択に戻る
+                while True:
+                    oxidizer_input = input("酸化剤を選択してください (list/番号/化学式/custom) [LOX]: ").strip()
+                    if oxidizer_input.lower() == "abort":
+                        print("❌ 記録を中断しました")
+                        return None
+                    if oxidizer_input.lower() == "list":
+                        self.show_propellant_list("oxidizers")
+                        continue
+                    
+                    oxidizer = self.select_propellant('oxidizer')
+                    if oxidizer is None:
+                        print("❌ 記録を中断しました")
+                        return None
+                    if oxidizer == "back":
+                        continue
+                    break
+                
+                oxidizer = oxidizer or "LOX"
+                Pc_input = input("燃焼室圧力 (bar) [50]: ").strip()
+                if Pc_input.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
             Pc = float(Pc_input or "50")
             
             MR_input = input("混合比 [6.0]: ").strip()
             if MR_input.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
+            if MR_input.lower() == "back":
+                print("🔄 一つ前の入力に戻ります")
+                Pc_input = input("燃焼室圧力 (bar) [50]: ").strip()
+                if Pc_input.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
+                Pc = float(Pc_input or "50")
+                MR_input = input("混合比 [6.0]: ").strip()
+                if MR_input.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
             MR = float(MR_input or "6.0")
             
             Pe_input = input("排気圧力 (bar) [1.0]: ").strip()
             if Pe_input.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
+            if Pe_input.lower() == "back":
+                print("🔄 一つ前の入力に戻ります")
+                MR_input = input("混合比 [6.0]: ").strip()
+                if MR_input.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
+                MR = float(MR_input or "6.0")
+                Pe_input = input("排気圧力 (bar) [1.0]: ").strip()
+                if Pe_input.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
             Pe = float(Pe_input or "1.0")
             
         except ValueError:
@@ -418,30 +737,85 @@ class CEALearningSystem:
             if isp_vac_input.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
+            if isp_vac_input.lower() == "back":
+                print("🔄 一つ前の入力に戻ります")
+                Pe_input = input("排気圧力 (bar) [1.0]: ").strip()
+                if Pe_input.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
+                Pe = float(Pe_input or "1.0")
+                isp_vac_input = input("真空中比推力 (s) [400]: ").strip()
+                if isp_vac_input.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
             isp_vacuum = float(isp_vac_input or "400")
             
             isp_sl_input = input("海面比推力 (s) [350]: ").strip()
             if isp_sl_input.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
+            if isp_sl_input.lower() == "back":
+                print("🔄 一つ前の入力に戻ります")
+                isp_vac_input = input("真空中比推力 (s) [400]: ").strip()
+                if isp_vac_input.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
+                isp_vacuum = float(isp_vac_input or "400")
+                isp_sl_input = input("海面比推力 (s) [350]: ").strip()
+                if isp_sl_input.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
             isp_sea_level = float(isp_sl_input or "350")
             
             Tc_input = input("燃焼室温度 (K) [3500]: ").strip()
             if Tc_input.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
+            if Tc_input.lower() == "back":
+                print("🔄 一つ前の入力に戻ります")
+                isp_sl_input = input("海面比推力 (s) [350]: ").strip()
+                if isp_sl_input.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
+                isp_sea_level = float(isp_sl_input or "350")
+                Tc_input = input("燃焼室温度 (K) [3500]: ").strip()
+                if Tc_input.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
             Tc = float(Tc_input or "3500")
             
             gamma_input = input("比熱比 [1.2]: ").strip()
             if gamma_input.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
+            if gamma_input.lower() == "back":
+                print("🔄 一つ前の入力に戻ります")
+                Tc_input = input("燃焼室温度 (K) [3500]: ").strip()
+                if Tc_input.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
+                Tc = float(Tc_input or "3500")
+                gamma_input = input("比熱比 [1.2]: ").strip()
+                if gamma_input.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
             gamma = float(gamma_input or "1.2")
             
             Cf_input = input("推力係数 [1.8]: ").strip()
             if Cf_input.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
+            if Cf_input.lower() == "back":
+                print("🔄 一つ前の入力に戻ります")
+                gamma_input = input("比熱比 [1.2]: ").strip()
+                if gamma_input.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
+                gamma = float(gamma_input or "1.2")
+                Cf_input = input("推力係数 [1.8]: ").strip()
+                if Cf_input.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
             Cf = float(Cf_input or "1.8")
             
         except ValueError:
@@ -454,6 +828,17 @@ class CEALearningSystem:
         if notes.lower() == "abort":
             print("❌ 記録を中断しました")
             return None
+        if notes.lower() == "back":
+            print("🔄 一つ前の入力に戻ります")
+            Cf_input = input("推力係数 [1.8]: ").strip()
+            if Cf_input.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
+            Cf = float(Cf_input or "1.8")
+            notes = input("計算の目的、発見、学んだこと: ").strip()
+            if notes.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
         
         # 使用ツール入力
         print(f"\n🛠️ 使用ツール:")
@@ -461,6 +846,16 @@ class CEALearningSystem:
         if tools.lower() == "abort":
             print("❌ 記録を中断しました")
             return None
+        if tools.lower() == "back":
+            print("🔄 一つ前の入力に戻ります")
+            notes = input("計算の目的、発見、学んだこと: ").strip()
+            if notes.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
+            tools = input("使用したソフトウェア/ツール (例: CEA, RPA, 自作プログラム): ").strip()
+            if tools.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
         
         # 結果をまとめる
         result = {
@@ -488,6 +883,7 @@ class CEALearningSystem:
         
         # ファイルに保存
         self._save_calculation(result)
+        self._save_calculation_history()
         
         print(f"\n✅ CEA計算結果を記録しました!")
         print(f"   🔥 燃料: {fuel}")
@@ -536,6 +932,37 @@ class CEALearningSystem:
                 goal['current'] = 1
             elif goal['id'] == 'propellant_stability_evaluator' and '安定性' in result['notes']:
                 goal['current'] = 1
+            elif goal['id'] == 'udmh_master' and 'UDMH' in result['fuel']:
+                goal['current'] = 1
+            elif goal['id'] == 'fluorine_explorer' and 'F2' in result['oxidizer']:
+                goal['current'] = 1
+            elif goal['id'] == 'high_energy_propellant_expert':
+                # F2、ClF3、ClF5などの高エネルギー酸化剤をチェック
+                high_energy_oxidizers = ['F2', 'ClF3', 'ClF5', 'OF2', 'N2F4']
+                if result['oxidizer'] in high_energy_oxidizers:
+                    goal['current'] = min(goal['current'] + 1, goal['target'])
+            elif goal['id'] == 'hydrazine_family_explorer':
+                # UDMH、MMH、N2H4のヒドラジン族をチェック
+                hydrazine_fuels = ['UDMH', 'MMH', 'N2H4']
+                if result['fuel'] in hydrazine_fuels:
+                    goal['current'] = min(goal['current'] + 1, goal['target'])
+            elif goal['id'] == 'hydrocarbon_master':
+                # C2H6からC50H102までの炭化水素燃料をチェック
+                hydrocarbon_fuels = [key for key in self.propellants['fuels'].keys() 
+                                   if key.startswith('C') and 'H' in key and key not in ['CH4']]
+                if result['fuel'] in hydrocarbon_fuels:
+                    goal['current'] = min(goal['current'] + 1, goal['target'])
+            elif goal['id'] == 'concentrated_oxidizer_expert':
+                # 90%以上の高濃度酸化剤をチェック
+                concentrated_oxidizers = [key for key in self.propellants['oxidizers'].keys() 
+                                        if any(suffix in key for suffix in ['_90', '_95', '_98', '_99', '_100'])]
+                if result['oxidizer'] in concentrated_oxidizers:
+                    goal['current'] = min(goal['current'] + 1, goal['target'])
+            elif goal['id'] == 'dangerous_propellant_researcher':
+                # F2、ClF3、ClF5などの危険な推進剤をチェック
+                dangerous_propellants = ['F2', 'ClF3', 'ClF5', 'OF2', 'N2F4', 'NF3']
+                if result['oxidizer'] in dangerous_propellants:
+                    goal['current'] = min(goal['current'] + 1, goal['target'])
         
         # 性能目標の更新
         for goal in self.learning_goals['performance_goals']:
@@ -618,6 +1045,26 @@ class CEALearningSystem:
             elif goal['id'] == 'future_rocket_bridge' and '新技術' in result['notes']:
                 goal['current'] = 1
     
+    def _load_calculation_history(self) -> List[Dict]:
+        """計算履歴を読み込み"""
+        if self.history_file.exists():
+            try:
+                with open(self.history_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    return data.get('calculations', [])
+            except Exception as e:
+                print(f"⚠️ CEA履歴読み込みエラー: {e}")
+        return []
+    
+    def _save_calculation_history(self):
+        """計算履歴をファイルに保存"""
+        try:
+            data = {'calculations': self.calculation_history}
+            with open(self.history_file, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"❌ CEA履歴保存エラー: {e}")
+    
     def _save_calculation(self, result: Dict):
         """計算結果をファイルに保存"""
         timestamp = int(time.time())
@@ -630,6 +1077,14 @@ class CEALearningSystem:
             print(f"💾 計算結果を保存: {filepath}")
         except Exception as e:
             print(f"❌ 保存エラー: {e}")
+        
+        # GameEngineのウォレットにも保存
+        if self.game_engine:
+            if 'cea_calculations' not in self.game_engine.wallet:
+                self.game_engine.wallet['cea_calculations'] = []
+            self.game_engine.wallet['cea_calculations'].append(result)
+            self.game_engine.save_wallet()
+            print("💾 GameEngineウォレットに保存しました")
     
     def show_learning_goals(self, selected_category: str = "all"):
         """学習目標を表示"""
@@ -745,10 +1200,54 @@ class CEALearningSystem:
         max_isp = 0
         max_pressure = 0
         
+        # 新しい推進剤統計
+        udmh_usage = 0
+        fluorine_usage = 0
+        high_energy_oxidizer_usage = 0
+        hydrazine_family_usage = 0
+        hydrocarbon_usage = 0
+        concentrated_oxidizer_usage = 0
+        dangerous_propellant_usage = 0
+        
         for calc in self.calculation_history:
             unique_propellants.add(f"{calc['fuel']}/{calc['oxidizer']}")
             max_isp = max(max_isp, calc['isp_vacuum'])
             max_pressure = max(max_pressure, calc['Pc'])
+            
+            # UDMH使用統計
+            if 'UDMH' in calc['fuel']:
+                udmh_usage += 1
+            
+            # フッ素使用統計
+            if 'F2' in calc['oxidizer']:
+                fluorine_usage += 1
+            
+            # 高エネルギー酸化剤統計
+            high_energy_oxidizers = ['F2', 'ClF3', 'ClF5', 'OF2', 'N2F4']
+            if calc['oxidizer'] in high_energy_oxidizers:
+                high_energy_oxidizer_usage += 1
+            
+            # ヒドラジン族統計
+            hydrazine_fuels = ['UDMH', 'MMH', 'N2H4']
+            if calc['fuel'] in hydrazine_fuels:
+                hydrazine_family_usage += 1
+            
+            # 炭化水素統計
+            hydrocarbon_fuels = [key for key in self.propellants['fuels'].keys() 
+                               if key.startswith('C') and 'H' in key and key not in ['CH4']]
+            if calc['fuel'] in hydrocarbon_fuels:
+                hydrocarbon_usage += 1
+            
+            # 高濃度酸化剤統計
+            concentrated_oxidizers = [key for key in self.propellants['oxidizers'].keys() 
+                                    if any(suffix in key for suffix in ['_90', '_95', '_98', '_99', '_100'])]
+            if calc['oxidizer'] in concentrated_oxidizers:
+                concentrated_oxidizer_usage += 1
+            
+            # 危険推進剤統計
+            dangerous_propellants = ['F2', 'ClF3', 'ClF5', 'OF2', 'N2F4', 'NF3']
+            if calc['oxidizer'] in dangerous_propellants:
+                dangerous_propellant_usage += 1
         
         return {
             'status': 'success',
@@ -756,7 +1255,14 @@ class CEALearningSystem:
             'unique_propellants': len(unique_propellants),
             'max_isp': max_isp,
             'max_pressure': max_pressure,
-            'propellant_combinations': list(unique_propellants)
+            'propellant_combinations': list(unique_propellants),
+            'udmh_usage': udmh_usage,
+            'fluorine_usage': fluorine_usage,
+            'high_energy_oxidizer_usage': high_energy_oxidizer_usage,
+            'hydrazine_family_usage': hydrazine_family_usage,
+            'hydrocarbon_usage': hydrocarbon_usage,
+            'concentrated_oxidizer_usage': concentrated_oxidizer_usage,
+            'dangerous_propellant_usage': dangerous_propellant_usage
         }
     
     def show_calculation_history(self):

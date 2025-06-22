@@ -15,15 +15,23 @@ from datetime import datetime
 class PowerGenerationLearningSystem:
     def __init__(self, config: Dict):
         self.config = config
-        self.power_dir = Path(config.get('output_dir', 'data/power_generation'))
+        self.power_dir = Path("data/power_generation")
         self.power_dir.mkdir(exist_ok=True)
         
-        # 発電方法履歴
-        self.generation_history = []
+        # 履歴ファイルの初期化
+        self.history_file = self.power_dir / "power_generations.json"
+        self.generation_history = self._load_generation_history()
         
         # 学習目標
         self.learning_goals = self._initialize_learning_goals()
         
+        # GameEngineへの参照を追加
+        self.game_engine = None
+        
+    def set_game_engine(self, game_engine):
+        """GameEngineへの参照を設定"""
+        self.game_engine = game_engine
+    
     def _initialize_learning_goals(self) -> Dict:
         """学習目標の初期化"""
         return {
@@ -360,6 +368,7 @@ class PowerGenerationLearningSystem:
         print(f"\n⚡ 発電方法記録")
         print("="*40)
         print("💡 入力中に「abort」と入力すると記録を中断できます")
+        print("💡 入力中に「back」と入力すると一つ前の入力に戻れます")
         print("-" * 40)
         
         # 発電方法の選択
@@ -396,6 +405,9 @@ class PowerGenerationLearningSystem:
             if choice.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
+            if choice.lower() == "back":
+                print("🔄 最初の入力なので戻る場所がありません。記録を中断します。")
+                return None
             choice = choice or "1"
             if choice in power_methods:
                 method = power_methods[choice]
@@ -412,18 +424,56 @@ class PowerGenerationLearningSystem:
             if capacity_input.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
+            if capacity_input.lower() == "back":
+                print("🔄 一つ前の入力に戻ります")
+                choice = input(f"選択してください (1-{len(power_methods)}) [1]: ").strip()
+                if choice.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
+                choice = choice or "1"
+                if choice in power_methods:
+                    method = power_methods[choice]
+                else:
+                    method = 'solar'
+                print(f"\n📊 {method_names[method]}の詳細を入力してください:")
+                capacity_input = input("発電容量 (kW) [1.0]: ").strip()
+                if capacity_input.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
             capacity = float(capacity_input or "1.0")
             
             efficiency_input = input("発電効率 (%) [15.0]: ").strip()
             if efficiency_input.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
+            if efficiency_input.lower() == "back":
+                print("🔄 一つ前の入力に戻ります")
+                capacity_input = input("発電容量 (kW) [1.0]: ").strip()
+                if capacity_input.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
+                capacity = float(capacity_input or "1.0")
+                efficiency_input = input("発電効率 (%) [15.0]: ").strip()
+                if efficiency_input.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
             efficiency = float(efficiency_input or "15.0")
             
             location = input("設置場所/地域: ").strip()
             if location.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
+            if location.lower() == "back":
+                print("🔄 一つ前の入力に戻ります")
+                efficiency_input = input("発電効率 (%) [15.0]: ").strip()
+                if efficiency_input.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
+                efficiency = float(efficiency_input or "15.0")
+                location = input("設置場所/地域: ").strip()
+                if location.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
             
         except ValueError:
             print("❌ 無効な値です。デフォルト値を使用します。")
@@ -435,16 +485,46 @@ class PowerGenerationLearningSystem:
         if equipment.lower() == "abort":
             print("❌ 記録を中断しました")
             return None
+        if equipment.lower() == "back":
+            print("🔄 一つ前の入力に戻ります")
+            location = input("設置場所/地域: ").strip()
+            if location.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
+            equipment = input("使用機器/設備 (例: 太陽光パネル、風力タービン): ").strip()
+            if equipment.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
         
         manufacturer = input("メーカー/ブランド: ").strip()
         if manufacturer.lower() == "abort":
             print("❌ 記録を中断しました")
             return None
+        if manufacturer.lower() == "back":
+            print("🔄 一つ前の入力に戻ります")
+            equipment = input("使用機器/設備 (例: 太陽光パネル、風力タービン): ").strip()
+            if equipment.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
+            manufacturer = input("メーカー/ブランド: ").strip()
+            if manufacturer.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
         
         installation_date = input("設置日 (YYYY-MM-DD): ").strip()
         if installation_date.lower() == "abort":
             print("❌ 記録を中断しました")
             return None
+        if installation_date.lower() == "back":
+            print("🔄 一つ前の入力に戻ります")
+            manufacturer = input("メーカー/ブランド: ").strip()
+            if manufacturer.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
+            installation_date = input("設置日 (YYYY-MM-DD): ").strip()
+            if installation_date.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
         
         # 実績データ入力
         print(f"\n📈 実績データ:")
@@ -453,18 +533,50 @@ class PowerGenerationLearningSystem:
             if daily_gen_input.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
+            if daily_gen_input.lower() == "back":
+                print("🔄 一つ前の入力に戻ります")
+                installation_date = input("設置日 (YYYY-MM-DD): ").strip()
+                if installation_date.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
+                daily_gen_input = input("1日あたりの発電量 (kWh) [5.0]: ").strip()
+                if daily_gen_input.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
             daily_generation = float(daily_gen_input or "5.0")
             
             monthly_gen_input = input("1ヶ月あたりの発電量 (kWh) [150.0]: ").strip()
             if monthly_gen_input.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
+            if monthly_gen_input.lower() == "back":
+                print("🔄 一つ前の入力に戻ります")
+                daily_gen_input = input("1日あたりの発電量 (kWh) [5.0]: ").strip()
+                if daily_gen_input.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
+                daily_generation = float(daily_gen_input or "5.0")
+                monthly_gen_input = input("1ヶ月あたりの発電量 (kWh) [150.0]: ").strip()
+                if monthly_gen_input.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
             monthly_generation = float(monthly_gen_input or "150.0")
             
             cost_input = input("発電コスト (円/kWh) [25.0]: ").strip()
             if cost_input.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
+            if cost_input.lower() == "back":
+                print("🔄 一つ前の入力に戻ります")
+                monthly_gen_input = input("1ヶ月あたりの発電量 (kWh) [150.0]: ").strip()
+                if monthly_gen_input.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
+                monthly_generation = float(monthly_gen_input or "150.0")
+                cost_input = input("発電コスト (円/kWh) [25.0]: ").strip()
+                if cost_input.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
             cost_per_kwh = float(cost_input or "25.0")
             
         except ValueError:
@@ -477,16 +589,47 @@ class PowerGenerationLearningSystem:
         if challenges.lower() == "abort":
             print("❌ 記録を中断しました")
             return None
+        if challenges.lower() == "back":
+            print("🔄 一つ前の入力に戻ります")
+            cost_input = input("発電コスト (円/kWh) [25.0]: ").strip()
+            if cost_input.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
+            cost_per_kwh = float(cost_input or "25.0")
+            challenges = input("課題や問題点: ").strip()
+            if challenges.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
         
         improvements = input("改善点や工夫: ").strip()
         if improvements.lower() == "abort":
             print("❌ 記録を中断しました")
             return None
+        if improvements.lower() == "back":
+            print("🔄 一つ前の入力に戻ります")
+            challenges = input("課題や問題点: ").strip()
+            if challenges.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
+            improvements = input("改善点や工夫: ").strip()
+            if improvements.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
         
         learnings = input("学んだこと: ").strip()
         if learnings.lower() == "abort":
             print("❌ 記録を中断しました")
             return None
+        if learnings.lower() == "back":
+            print("🔄 一つ前の入力に戻ります")
+            improvements = input("改善点や工夫: ").strip()
+            if improvements.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
+            learnings = input("学んだこと: ").strip()
+            if learnings.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
         
         # 結果をまとめる
         result = {
@@ -516,6 +659,7 @@ class PowerGenerationLearningSystem:
         
         # ファイルに保存
         self._save_generation_record(result)
+        self._save_generation_history()
         
         print(f"\n✅ 発電方法を記録しました!")
         print(f"   ⚡ 方法: {method_names[method]}")
@@ -638,6 +782,26 @@ class PowerGenerationLearningSystem:
             elif goal['id'] == 'future_energy_visionary' and '革新的技術' in result.get('notes', ''):
                 goal['current'] = 1
     
+    def _load_generation_history(self) -> List[Dict]:
+        """発電履歴を読み込み"""
+        if self.history_file.exists():
+            try:
+                with open(self.history_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    return data.get('generations', [])
+            except Exception as e:
+                print(f"⚠️ 発電履歴読み込みエラー: {e}")
+        return []
+    
+    def _save_generation_history(self):
+        """発電履歴をファイルに保存"""
+        try:
+            data = {'generations': self.generation_history}
+            with open(self.history_file, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"❌ 発電履歴保存エラー: {e}")
+    
     def _save_generation_record(self, result: Dict):
         """発電記録をファイルに保存"""
         timestamp = int(time.time())
@@ -650,6 +814,14 @@ class PowerGenerationLearningSystem:
             print(f"💾 発電記録を保存: {filepath}")
         except Exception as e:
             print(f"❌ 保存エラー: {e}")
+        
+        # GameEngineのウォレットにも保存
+        if self.game_engine:
+            if 'plant_designs' not in self.game_engine.wallet:
+                self.game_engine.wallet['plant_designs'] = []
+            self.game_engine.wallet['plant_designs'].append(result)
+            self.game_engine.save_wallet()
+            print("💾 GameEngineウォレットに保存しました")
     
     def show_learning_goals(self, selected_category: str = "all"):
         """学習目標を表示"""

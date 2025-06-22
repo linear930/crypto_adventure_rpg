@@ -42,6 +42,7 @@ class CryptoAdventureRPG:
         (self.data_dir / "power_generation").mkdir(exist_ok=True)
         (self.data_dir / "optics_observations").mkdir(exist_ok=True)
         (self.data_dir / "mining_activities").mkdir(exist_ok=True)
+        (self.data_dir / "activity_logs").mkdir(exist_ok=True)
         
         # 必要な履歴ファイルを初期化
         self._initialize_history_files()
@@ -55,10 +56,27 @@ class CryptoAdventureRPG:
         self.miner = MoneroMiningLearningSystem(self.config)
         self.power_missions = PowerMissionSystem(self.config)
         
+        # 各システムにGameEngineの参照を設定
+        self.cea_system.set_game_engine(self.game_engine)
+        self.power_system.set_game_engine(self.game_engine)
+        self.optics_system.set_game_engine(self.game_engine)
+        self.miner.set_game_engine(self.game_engine)
+        
         # ゲーム状態
         self.current_day = 1
-        self.actions_remaining = 3
         self.last_action_time = None
+        
+        # デバッグモード（ゲーム再起動まで有効）
+        self.debug_mode = False
+        
+        # 報酬システム
+        self.daily_rewards = {
+            'cea_calculation': 0,
+            'power_generation': 0,
+            'optics_observation': 0,
+            'mining_session': 0
+        }
+        self.consecutive_days_bonus = 0
         
     def _initialize_history_files(self):
         """履歴ファイルを初期化"""
@@ -115,9 +133,11 @@ class CryptoAdventureRPG:
         self.game_engine.load_state()
         self.game_engine.load_wallet()
         
+        # 履歴データを同期
+        self._sync_history_data()
+        
         # main.pyの状態をGameEngineと同期
         self.current_day = self.game_engine.state.get('current_day', 1)
-        self.actions_remaining = self.game_engine.state.get('actions_remaining', 3)
         
         # 日付チェック（最終行動日から経過日数を計算）
         last_action_date = self.game_engine.state.get('last_action_date')
@@ -158,10 +178,9 @@ class CryptoAdventureRPG:
         
         state = {
             'current_day': self.current_day,
-            'actions_remaining': self.actions_remaining,
             'last_action_time': datetime.now().isoformat(),
             'save_time': datetime.now().isoformat(),
-            'experience': self.game_engine.experience,
+            'experience': self.game_engine.state.get('experience', 0),
             'crypto_balance': self.game_engine.wallet['crypto_balance'],
             'total_actions': self.game_engine.state.get('total_actions', 0)
         }
@@ -180,9 +199,17 @@ class CryptoAdventureRPG:
             
             print(f"\n🏠 メインメニュー (Day {self.current_day})")
             print("="*50)
-            print(f"💎 経験値: {self.game_engine.experience}")
+            print(f"💎 経験値: {self.game_engine.state.get('experience', 0)}")
             print(f"💰 Crypto: {self.game_engine.wallet['crypto_balance']:.6f} XMR")
-            print(f"⚡ 残り行動: {self.actions_remaining}/3")
+            
+            # デバッグモード表示
+            if self.debug_mode:
+                print(f"🐛 デバッグモード: 有効")
+            
+            print()
+            
+            # 日次ダッシュボードを表示
+            self._show_daily_dashboard()
             print()
             
             print("📋 アクション選択:")
@@ -196,10 +223,16 @@ class CryptoAdventureRPG:
             print("   8. 🎵 BGM変更")
             print("   9. 💾 ゲーム保存")
             print("   10. 📂 セーブデータ読み込み")
-            print("   11. ❌ 終了")
+            print("   11. 📅 次の日へ進む")
+            print("   12. ❌ 終了")
             
             try:
-                choice = input(f"\n選択してください (1-11): ").strip()
+                choice = input(f"\n選択してください (1-12): ").strip()
+                
+                # デバッグコマンドチェック
+                if choice.lower() in ['debug', 'd', 'デバッグ']:
+                    self._toggle_debug_mode()
+                    continue
                 
                 if choice == "1":
                     self._cea_menu()
@@ -233,6 +266,9 @@ class CryptoAdventureRPG:
                     self._load_game_menu()
                     input("\n🔙 メインメニューに戻るにはEnterを押してください...")
                 elif choice == "11":
+                    self._advance_to_next_day()
+                    input("\n🔙 メインメニューに戻るにはEnterを押してください...")
+                elif choice == "12":
                     print("👋 ゲームを終了します。お疲れ様でした！")
                     break
                 else:
@@ -246,30 +282,137 @@ class CryptoAdventureRPG:
                 print(f"❌ エラーが発生しました: {e}")
                 input("\n🔙 メインメニューに戻るにはEnterを押してください...")
     
+    def _toggle_debug_mode(self):
+        """デバッグモードの切り替え"""
+        if self.debug_mode:
+            print("🐛 デバッグモードを無効にしました")
+            self.debug_mode = False
+        else:
+            print("🐛 デバッグモードを有効にしました")
+            print("💡 デバッグモードでは:")
+            print("   - 行動回数制限が無効になります")
+            print("   - 追加のデバッグ情報が表示されます")
+            print("   - ゲーム再起動まで有効です")
+            self.debug_mode = True
+        
+        input("\nEnterキーを押して続行...")
+    
+    def _show_daily_dashboard(self):
+        """日次ダッシュボードを表示"""
+        print("📊 今日のダッシュボード")
+        print("-" * 30)
+        
+        # 今日の活動状況
+        today_activities = self._get_today_activities()
+        
+        if today_activities:
+            print("✅ 今日の活動:")
+            for activity in today_activities:
+                print(f"   {activity}")
+        else:
+            print("📝 今日はまだ活動していません")
+        
+        # 推奨アクション
+        print(f"\n🎯 今日の推奨アクション:")
+        if not today_activities:
+            print("   🚀 新しい推進剤の組み合わせを試してみましょう")
+            print("   ⚡ 発電方法の研究を始めましょう")
+            print("   🔭 天体観測で新しい発見をしましょう")
+        else:
+            print("   💪 更なる高みを目指して活動を続けましょう！")
+            print("   🎯 学習目標の達成も忘れずに。")
+        
+        # 連続活動ボーナス
+        consecutive_days = self._get_consecutive_active_days()
+        if consecutive_days > 1:
+            print(f"\n🔥 連続{consecutive_days}日活動中！")
+            if consecutive_days >= 7:
+                print("   🏆 週間継続ボーナス獲得中！")
+            elif consecutive_days >= 3:
+                print("   ⭐ 3日連続ボーナス獲得中！")
+    
+    def _get_today_activities(self) -> List[str]:
+        """今日の活動を取得"""
+        activities = []
+        
+        # 今日の日付文字列を取得
+        today_str = self._get_date_string(self.current_day)
+        
+        # 各活動をカウント
+        cea_count = self._count_activities_by_date('cea_calculations', today_str)
+        power_count = self._count_activities_by_date('plant_designs', today_str)
+        optics_count = self._count_activities_by_date('optics_observations', today_str)
+        mining_count = self._count_activities_by_date('mining_history', today_str)
+        
+        if cea_count > 0:
+            activities.append(f"🚀 CEA計算: {cea_count}回")
+        if power_count > 0:
+            activities.append(f"⚡ 発電記録: {power_count}回")
+        if optics_count > 0:
+            activities.append(f"🔭 天体観測: {optics_count}回")
+        if mining_count > 0:
+            activities.append(f"⛏️ マイニング: {mining_count}セッション")
+        
+        return activities
+    
+    def _get_consecutive_active_days(self) -> int:
+        """連続活動日数を取得"""
+        consecutive_days = 0
+        current_day = self.current_day
+        
+        # 過去の日を遡って連続活動日数を計算
+        while current_day > 0:
+            activities = self._get_previous_day_activities(current_day)
+            if activities:
+                consecutive_days += 1
+                current_day -= 1
+            else:
+                break
+        
+        return consecutive_days
+    
     def _cea_menu(self):
         """CEA計算メニュー"""
-        if self.actions_remaining <= 0:
-            print("❌ 今日の行動回数が終了しました")
-            return
-        
         print(f"\n🚀 CEA計算記録・学習システム")
         print("="*40)
         print("1. 📝 計算結果を記録")
         print("2. 🎯 学習目標を確認")
         print("3. 📚 計算履歴を表示")
         print("4. 📊 統計を表示")
-        print("5. 🔙 戻る")
+        print("5. 🔥 推進剤リストを表示")
+        print("6. 🔙 戻る")
         
         try:
-            choice = input("選択してください (1-5): ").strip()
+            choice = input("選択してください (1-6): ").strip()
             
             if choice == "1":
                 result = self.cea_system.record_cea_calculation()
                 if result:
+                    # 報酬を計算
+                    reward = self._get_activity_reward("cea_calculation", result)
+                    
+                    # 活動をテキストファイルに記録
+                    log_details = result.copy()
+                    log_details.update(reward)
+                    self._record_activity("cea_calculation", log_details)
+                    
                     # 履歴をGameEngineに保存
                     self.game_engine.add_cea_result(result)
                     
-                    self._consume_action()
+                    # 報酬を付与
+                    self.game_engine.add_experience(reward['total_experience'])
+                    self.game_engine.add_crypto(reward['crypto_earned'])
+                    
+                    # 報酬表示
+                    print(f"\n🎁 報酬獲得!")
+                    print(f"   💎 基本報酬: +{reward['base_reward']} 経験値")
+                    if reward['bonus_reward'] > 0:
+                        print(f"   ⭐ 追加報酬: +{reward['bonus_reward']} 経験値")
+                    if reward['consecutive_bonus'] > 0:
+                        print(f"   🔥 連続活動ボーナス: +{reward['consecutive_bonus']} 経験値")
+                    print(f"   💰 Crypto: +{reward['crypto_earned']:.6f} XMR")
+                    print(f"   📊 総獲得経験値: {reward['total_experience']}")
+                    
                     # 学習目標の完了チェック
                     completed_goals = self.cea_system.check_goal_completion()
                     for goal in completed_goals:
@@ -278,12 +421,16 @@ class CryptoAdventureRPG:
                         print(f"🎉 学習目標達成: {goal['name']}!")
                         print(f"   💎 経験値 +{goal['reward']['experience']}")
                         print(f"   💰 Crypto +{goal['reward']['crypto']:.6f} XMR")
+                        print()  # 改行を追加
                         
             elif choice == "2":
+                # デバッグ除外: 学習目標確認は行動回数を消費しない
                 self.cea_system.show_learning_goals()
             elif choice == "3":
+                # デバッグ除外: 履歴表示は行動回数を消費しない
                 self.cea_system.show_calculation_history()
             elif choice == "4":
+                # デバッグ除外: 統計表示は行動回数を消費しない
                 stats = self.cea_system.get_calculation_statistics()
                 if stats['status'] == 'success':
                     print(f"\n📊 CEA計算統計:")
@@ -291,9 +438,21 @@ class CryptoAdventureRPG:
                     print(f"   ユニーク推進剤: {stats['unique_propellants']}")
                     print(f"   最高比推力: {stats['max_isp']} s")
                     print(f"   最高圧力: {stats['max_pressure']} bar")
+                    print(f"\n🚀 推進剤使用統計:")
+                    print(f"   UDMH使用回数: {stats['udmh_usage']}")
+                    print(f"   フッ素(F2)使用回数: {stats['fluorine_usage']}")
+                    print(f"   高エネルギー酸化剤使用回数: {stats['high_energy_oxidizer_usage']}")
+                    print(f"   ヒドラジン族使用回数: {stats['hydrazine_family_usage']}")
+                    print(f"   炭化水素燃料使用回数: {stats['hydrocarbon_usage']}")
+                    print(f"   高濃度酸化剤使用回数: {stats['concentrated_oxidizer_usage']}")
+                    print(f"   危険推進剤使用回数: {stats['dangerous_propellant_usage']}")
                 else:
                     print("📝 計算データがありません")
             elif choice == "5":
+                # デバッグ除外: 推進剤リスト表示は行動回数を消費しない
+                self.cea_system.show_propellant_list()
+                input("\nEnterキーを押して続行...")
+            elif choice == "6":
                 return
             else:
                 print("❌ 無効な選択です")
@@ -303,10 +462,6 @@ class CryptoAdventureRPG:
     
     def _power_menu(self):
         """発電方法メニュー"""
-        if self.actions_remaining <= 0:
-            print("❌ 今日の行動回数が終了しました")
-            return
-        
         print(f"\n⚡ 発電方法記録・学習システム")
         print("="*40)
         print("1. 📝 発電方法を記録")
@@ -322,10 +477,31 @@ class CryptoAdventureRPG:
             if choice == "1":
                 result = self.power_system.record_power_generation()
                 if result:
+                    # 報酬を計算
+                    reward = self._get_activity_reward("power_generation", result)
+                    
+                    # 活動をテキストファイルに記録
+                    log_details = result.copy()
+                    log_details.update(reward)
+                    self._record_activity("power_generation", log_details)
+                    
                     # 履歴をGameEngineに保存
                     self.game_engine.add_power_plant_result(result)
                     
-                    self._consume_action()
+                    # 報酬を付与
+                    self.game_engine.add_experience(reward['total_experience'])
+                    self.game_engine.add_crypto(reward['crypto_earned'])
+                    
+                    # 報酬表示
+                    print(f"\n🎁 報酬獲得!")
+                    print(f"   💎 基本報酬: +{reward['base_reward']} 経験値")
+                    if reward['bonus_reward'] > 0:
+                        print(f"   ⭐ 追加報酬: +{reward['bonus_reward']} 経験値")
+                    if reward['consecutive_bonus'] > 0:
+                        print(f"   🔥 連続活動ボーナス: +{reward['consecutive_bonus']} 経験値")
+                    print(f"   💰 Crypto: +{reward['crypto_earned']:.6f} XMR")
+                    print(f"   📊 総獲得経験値: {reward['total_experience']}")
+                    
                     # 学習目標の完了チェック
                     completed_goals = self.power_system.check_goal_completion()
                     for goal in completed_goals:
@@ -334,12 +510,16 @@ class CryptoAdventureRPG:
                         print(f"🎉 学習目標達成: {goal['name']}!")
                         print(f"   💎 経験値 +{goal['reward']['experience']}")
                         print(f"   💰 Crypto +{goal['reward']['crypto']:.6f} XMR")
+                        print()  # 改行を追加
                         
             elif choice == "2":
+                # デバッグ除外: 学習目標確認は行動回数を消費しない
                 self.power_system.show_learning_goals()
             elif choice == "3":
+                # デバッグ除外: 履歴表示は行動回数を消費しない
                 self.power_system.show_generation_history()
             elif choice == "4":
+                # デバッグ除外: 統計表示は行動回数を消費しない
                 stats = self.power_system.get_generation_statistics()
                 if stats['status'] == 'success':
                     print(f"\n📊 発電統計:")
@@ -350,6 +530,7 @@ class CryptoAdventureRPG:
                 else:
                     print("📝 発電データがありません")
             elif choice == "5":
+                # デバッグ除外: ガイド表示は行動回数を消費しない
                 self.power_system.show_power_methods_guide()
             elif choice == "6":
                 return
@@ -361,29 +542,45 @@ class CryptoAdventureRPG:
     
     def _optics_menu(self):
         """天体観測メニュー"""
-        if self.actions_remaining <= 0:
-            print("❌ 今日の行動回数が終了しました")
-            return
-        
         print(f"\n🔭 天体観測記録・学習システム")
         print("="*40)
         print("1. 📝 観測を記録")
         print("2. 🎯 学習目標を確認")
         print("3. 📚 観測履歴を表示")
         print("4. 📊 統計を表示")
-        print("5. 📖 機材ガイド")
-        print("6. 🔙 戻る")
+        print("5. 🔙 戻る")
         
         try:
-            choice = input("選択してください (1-6): ").strip()
+            choice = input("選択してください (1-5): ").strip()
             
             if choice == "1":
-                result = self.optics_system.record_astronomical_observation()
+                result = self.optics_system.record_observation()
                 if result:
+                    # 報酬を計算
+                    reward = self._get_activity_reward("optics_observation", result)
+                    
+                    # 活動をテキストファイルに記録
+                    log_details = result.copy()
+                    log_details.update(reward)
+                    self._record_activity("optics_observation", log_details)
+                    
                     # 履歴をGameEngineに保存
                     self.game_engine.add_optics_observation(result)
                     
-                    self._consume_action()
+                    # 報酬を付与
+                    self.game_engine.add_experience(reward['total_experience'])
+                    self.game_engine.add_crypto(reward['crypto_earned'])
+                    
+                    # 報酬表示
+                    print(f"\n🎁 報酬獲得!")
+                    print(f"   💎 基本報酬: +{reward['base_reward']} 経験値")
+                    if reward['bonus_reward'] > 0:
+                        print(f"   ⭐ 追加報酬: +{reward['bonus_reward']} 経験値")
+                    if reward['consecutive_bonus'] > 0:
+                        print(f"   🔥 連続活動ボーナス: +{reward['consecutive_bonus']} 経験値")
+                    print(f"   💰 Crypto: +{reward['crypto_earned']:.6f} XMR")
+                    print(f"   📊 総獲得経験値: {reward['total_experience']}")
+                    
                     # 学習目標の完了チェック
                     completed_goals = self.optics_system.check_goal_completion()
                     for goal in completed_goals:
@@ -392,15 +589,19 @@ class CryptoAdventureRPG:
                         print(f"🎉 学習目標達成: {goal['name']}!")
                         print(f"   💎 経験値 +{goal['reward']['experience']}")
                         print(f"   💰 Crypto +{goal['reward']['crypto']:.6f} XMR")
+                        print()  # 改行を追加
                         
             elif choice == "2":
+                # デバッグ除外: 学習目標確認は行動回数を消費しない
                 self.optics_system.show_learning_goals()
             elif choice == "3":
+                # デバッグ除外: 履歴表示は行動回数を消費しない
                 self.optics_system.show_observation_history()
             elif choice == "4":
+                # デバッグ除外: 統計表示は行動回数を消費しない
                 stats = self.optics_system.get_observation_statistics()
                 if stats['status'] == 'success':
-                    print(f"\n📊 観測統計:")
+                    print(f"\n📊 天体観測統計:")
                     print(f"   総観測回数: {stats['total_observations']}")
                     print(f"   ユニーク天体: {stats['unique_targets']}")
                     print(f"   カテゴリ数: {stats['unique_categories']}")
@@ -408,8 +609,6 @@ class CryptoAdventureRPG:
                 else:
                     print("📝 観測データがありません")
             elif choice == "5":
-                self.optics_system.show_equipment_guide()
-            elif choice == "6":
                 return
             else:
                 print("❌ 無効な選択です")
@@ -419,35 +618,52 @@ class CryptoAdventureRPG:
     
     def _mining_menu(self):
         """マイニングメニュー"""
-        if self.actions_remaining <= 0:
-            print("❌ 今日の行動回数が終了しました")
-            return
-        
-        print(f"\n⛏️  Moneroマイニング記録・学習システム")
+        print(f"\n⛏️  Moneroマイニングシステム")
         print("="*40)
-        print("1. 📝 マイニングセッションを記録")
+        print("1. ⛏️  マイニング開始")
         print("2. ⚙️  マイニング設定")
-        print("3. 🚀 マイニング開始")
-        print("4. 🛑 マイニング停止")
-        print("5. 📊 マイニング状態")
-        print("6. 🎯 学習目標を確認")
-        print("7. 📚 マイニング履歴を表示")
-        print("8. 📈 統計を表示")
+        print("3. ▶️  マイニング開始")
+        print("4. ⏹️  マイニング停止")
+        print("5. 📊 マイニング状況")
+        print("6. 🎯 学習目標確認")
+        print("7. 📚 マイニング履歴")
+        print("8. 📈 マイニング統計")
         print("9. 📖 マイニングガイド")
         print("10. 🔍 システム互換性チェック")
-        print("11. 📦 cpuminer-optインストールガイド")
+        print("11. 📦 マイニングソフトインストール")
         print("12. 🔙 戻る")
         
         try:
             choice = input("選択してください (1-12): ").strip()
             
             if choice == "1":
-                result = self.miner.record_mining_session()
+                result = self.miner.start_mining_session()
                 if result:
+                    # 報酬を計算
+                    reward = self._get_activity_reward("mining_session", result)
+                    
+                    # 活動をテキストファイルに記録
+                    log_details = result.copy()
+                    log_details.update(reward)
+                    self._record_activity("mining_session", log_details)
+                    
                     # 履歴をGameEngineに保存
                     self.game_engine.add_mining_result(result)
                     
-                    self._consume_action()
+                    # 報酬を付与
+                    self.game_engine.add_experience(reward['total_experience'])
+                    self.game_engine.add_crypto(reward['crypto_earned'])
+                    
+                    # 報酬表示
+                    print(f"\n🎁 報酬獲得!")
+                    print(f"   💎 基本報酬: +{reward['base_reward']} 経験値")
+                    if reward['bonus_reward'] > 0:
+                        print(f"   ⭐ 追加報酬: +{reward['bonus_reward']} 経験値")
+                    if reward['consecutive_bonus'] > 0:
+                        print(f"   🔥 連続活動ボーナス: +{reward['consecutive_bonus']} 経験値")
+                    print(f"   💰 Crypto: +{reward['crypto_earned']:.6f} XMR")
+                    print(f"   📊 総獲得経験値: {reward['total_experience']}")
+                    
                     # 学習目標の完了チェック
                     completed_goals = self.miner.check_goal_completion()
                     for goal in completed_goals:
@@ -456,31 +672,39 @@ class CryptoAdventureRPG:
                         print(f"🎉 学習目標達成: {goal['name']}!")
                         print(f"   💎 経験値 +{goal['reward']['experience']}")
                         print(f"   💰 Crypto +{goal['reward']['crypto']:.6f} XMR")
+                        print()  # 改行を追加
                         
             elif choice == "2":
+                # デバッグ除外: 設定は行動回数を消費しない
                 config = self.miner.configure_mining()
                 if config:
                     print("✅ マイニング設定を保存しました")
                     
             elif choice == "3":
+                # デバッグ除外: マイニング開始は行動回数を消費しない
                 if self.miner.start_mining():
                     print("✅ マイニングを開始しました")
                     print("💡 マイニングを停止するには、メニューから「マイニング停止」を選択してください")
                     
             elif choice == "4":
+                # デバッグ除外: マイニング停止は行動回数を消費しない
                 if self.miner.stop_mining():
                     print("✅ マイニングを停止しました")
                     
             elif choice == "5":
+                # デバッグ除外: 状況確認は行動回数を消費しない
                 self.miner.show_mining_status()
                 
             elif choice == "6":
+                # デバッグ除外: 学習目標確認は行動回数を消費しない
                 self.miner.show_learning_goals()
                 
             elif choice == "7":
+                # デバッグ除外: 履歴表示は行動回数を消費しない
                 self.miner.show_mining_history()
                 
             elif choice == "8":
+                # デバッグ除外: 統計表示は行動回数を消費しない
                 stats = self.miner.get_mining_statistics()
                 if stats['status'] == 'success':
                     print(f"\n📊 マイニング統計:")
@@ -494,9 +718,11 @@ class CryptoAdventureRPG:
                     print("📝 マイニングデータがありません")
                     
             elif choice == "9":
+                # デバッグ除外: ガイド表示は行動回数を消費しない
                 self.miner.show_mining_guide()
                 
             elif choice == "10":
+                # デバッグ除外: 互換性チェックは行動回数を消費しない
                 compatibility = self.miner.check_system_compatibility()
                 print(f"\n🔍 システム互換性チェック:")
                 print(f"   OS: {compatibility['os']}")
@@ -512,6 +738,7 @@ class CryptoAdventureRPG:
                 print(f"   🎯 マイニングサポート: {'✅ 可能' if compatibility['mining_supported'] else '❌ 不可能'}")
                 
             elif choice == "11":
+                # デバッグ除外: インストールガイドは行動回数を消費しない
                 self.miner.install_cpuminer_guide()
                 
             elif choice == "12":
@@ -535,10 +762,13 @@ class CryptoAdventureRPG:
             choice = input("選択してください (1-4): ").strip()
             
             if choice == "1":
+                # デバッグ除外: ミッション一覧は行動回数を消費しない
                 self.power_missions.show_missions()
             elif choice == "2":
+                # デバッグ除外: ミッション統計は行動回数を消費しない
                 self.power_missions.show_mission_statistics()
             elif choice == "3":
+                # デバッグ除外: ミッションヒントは行動回数を消費しない
                 self.power_missions.show_mission_hints()
             elif choice == "4":
                 return
@@ -563,8 +793,10 @@ class CryptoAdventureRPG:
             choice = input("選択してください (1-6): ").strip()
             
             if choice == "1":
+                # デバッグ除外: ゲーム統計は行動回数を消費しない
                 self._show_game_statistics()
             elif choice == "2":
+                # デバッグ除外: CEA統計は行動回数を消費しない
                 stats = self.cea_system.get_calculation_statistics()
                 if stats['status'] == 'success':
                     print(f"\n📊 CEA計算統計:")
@@ -572,9 +804,18 @@ class CryptoAdventureRPG:
                     print(f"   ユニーク推進剤: {stats['unique_propellants']}")
                     print(f"   最高比推力: {stats['max_isp']} s")
                     print(f"   最高圧力: {stats['max_pressure']} bar")
+                    print(f"\n🚀 推進剤使用統計:")
+                    print(f"   UDMH使用回数: {stats['udmh_usage']}")
+                    print(f"   フッ素(F2)使用回数: {stats['fluorine_usage']}")
+                    print(f"   高エネルギー酸化剤使用回数: {stats['high_energy_oxidizer_usage']}")
+                    print(f"   ヒドラジン族使用回数: {stats['hydrazine_family_usage']}")
+                    print(f"   炭化水素燃料使用回数: {stats['hydrocarbon_usage']}")
+                    print(f"   高濃度酸化剤使用回数: {stats['concentrated_oxidizer_usage']}")
+                    print(f"   危険推進剤使用回数: {stats['dangerous_propellant_usage']}")
                 else:
                     print("📝 計算データがありません")
             elif choice == "3":
+                # デバッグ除外: 発電統計は行動回数を消費しない
                 stats = self.power_system.get_generation_statistics()
                 if stats['status'] == 'success':
                     print(f"\n📊 発電統計:")
@@ -585,6 +826,7 @@ class CryptoAdventureRPG:
                 else:
                     print("📝 発電データがありません")
             elif choice == "4":
+                # デバッグ除外: 観測統計は行動回数を消費しない
                 stats = self.optics_system.get_observation_statistics()
                 if stats['status'] == 'success':
                     print(f"\n📊 観測統計:")
@@ -595,6 +837,7 @@ class CryptoAdventureRPG:
                 else:
                     print("📝 観測データがありません")
             elif choice == "5":
+                # デバッグ除外: マイニング統計は行動回数を消費しない
                 self.miner.show_mining_stats()
             elif choice == "6":
                 return
@@ -617,10 +860,13 @@ class CryptoAdventureRPG:
             choice = input("選択してください (1-4): ").strip()
             
             if choice == "1":
+                # デバッグ除外: 学習目標確認は行動回数を消費しない
                 self.cea_system.show_learning_goals()
             elif choice == "2":
+                # デバッグ除外: 学習目標確認は行動回数を消費しない
                 self.power_system.show_learning_goals()
             elif choice == "3":
+                # デバッグ除外: 学習目標確認は行動回数を消費しない
                 self.optics_system.show_learning_goals()
             elif choice == "4":
                 return
@@ -635,9 +881,8 @@ class CryptoAdventureRPG:
         print(f"\n🎮 ゲーム統計")
         print("="*40)
         print(f"📅 現在の日: {self.current_day}")
-        print(f"💎 経験値: {self.game_engine.experience}")
+        print(f"💎 経験値: {self.game_engine.state.get('experience', 0)}")
         print(f"💰 Crypto: {self.game_engine.wallet['crypto_balance']:.6f} XMR")
-        print(f"⚡ 残り行動: {self.actions_remaining}/3")
         
         # 各システムの統計
         cea_stats = self.cea_system.get_calculation_statistics()
@@ -648,27 +893,6 @@ class CryptoAdventureRPG:
         print(f"   🚀 CEA計算: {cea_stats.get('total_calculations', 0)}回")
         print(f"   ⚡ 発電記録: {power_stats.get('total_records', 0)}回")
         print(f"   🔭 観測記録: {optics_stats.get('total_observations', 0)}回")
-    
-    def _consume_action(self):
-        """行動回数を消費"""
-        if self.actions_remaining > 0:
-            self.actions_remaining -= 1
-            
-            # GameEngineの行動回数も更新
-            if self.game_engine.use_action():
-                # GameEngineの状態と同期
-                self.current_day = self.game_engine.state.get('current_day', 1)
-                self.actions_remaining = self.game_engine.state.get('actions_remaining', 3)
-                
-                # ゲーム状態を自動保存
-                self.game_engine.save_state()
-                self.game_engine.save_wallet()
-                
-                print(f"⚡ 行動を実行しました (残り: {self.actions_remaining}/3)")
-            else:
-                print("❌ 行動回数が不足しています")
-        else:
-            print("❌ 今日の行動回数が終了しました")
     
     def _bgm_menu(self):
         """BGM変更メニュー"""
@@ -765,13 +989,11 @@ class CryptoAdventureRPG:
         
         # main.pyの状態をGameEngineと同期
         self.current_day = self.game_engine.state.get('current_day', 1)
-        self.actions_remaining = self.game_engine.state.get('actions_remaining', 3)
         
         print("✅ ゲーム状態を再読み込みしました")
         print(f"   📅 現在の日: {self.current_day}日目")
-        print(f"   ⚡ 残り行動: {self.actions_remaining}/3")
         print(f"   💰 Crypto残高: {self.game_engine.wallet['crypto_balance']:.6f} XMR")
-        print(f"   💎 経験値: {self.game_engine.experience}")
+        print(f"   💎 経験値: {self.game_engine.state.get('experience', 0)}")
         
         # 履歴情報も表示
         cea_count = len(self.game_engine.wallet.get('cea_calculations', []))
@@ -791,6 +1013,8 @@ class CryptoAdventureRPG:
                     cea_data = json.load(f)
                     if 'calculations' in cea_data:
                         self.game_engine.wallet['cea_calculations'] = cea_data['calculations']
+                        # CEAシステムの履歴も同期
+                        self.cea_system.calculation_history = cea_data['calculations']
             
             # 発電記録履歴の同期
             power_file = self.data_dir / "power_generation" / "power_generations.json"
@@ -799,6 +1023,8 @@ class CryptoAdventureRPG:
                     power_data = json.load(f)
                     if 'generations' in power_data:
                         self.game_engine.wallet['plant_designs'] = power_data['generations']
+                        # 発電システムの履歴も同期
+                        self.power_system.generation_history = power_data['generations']
             
             # 観測記録履歴の同期
             optics_file = self.data_dir / "optics_observations" / "optics_observations.json"
@@ -807,6 +1033,8 @@ class CryptoAdventureRPG:
                     optics_data = json.load(f)
                     if 'observations' in optics_data:
                         self.game_engine.wallet['optics_observations'] = optics_data['observations']
+                        # 観測システムの履歴も同期
+                        self.optics_system.observation_history = optics_data['observations']
             
             # マイニング履歴の同期
             mining_file = self.data_dir / "mining_activities" / "mining_sessions.json"
@@ -815,6 +1043,8 @@ class CryptoAdventureRPG:
                     mining_data = json.load(f)
                     if 'sessions' in mining_data:
                         self.game_engine.wallet['mining_history'] = mining_data['sessions']
+                        # マイニングシステムの履歴も同期
+                        self.miner.mining_history = mining_data['sessions']
             
             # 総行動回数を更新
             total_activities = (
@@ -829,6 +1059,8 @@ class CryptoAdventureRPG:
             self.game_engine.save_wallet()
             self.game_engine.save_state()
             
+            print(f"✅ 履歴データを同期しました（総{total_activities}件）")
+            
         except Exception as e:
             print(f"⚠️ 履歴データ同期エラー: {e}")
     
@@ -840,7 +1072,6 @@ class CryptoAdventureRPG:
         # GameEngineの状態情報
         print("🎮 ゲーム状態:")
         print(f"   📅 現在の日: {self.game_engine.state.get('current_day', 1)}日目")
-        print(f"   ⚡ 残り行動: {self.game_engine.state.get('actions_remaining', 3)}/3")
         print(f"   🏆 獲得称号数: {len(self.game_engine.state.get('titles', []))}")
         print(f"   📈 総行動回数: {self.game_engine.state.get('total_actions', 0)}")
         
@@ -935,6 +1166,31 @@ class CryptoAdventureRPG:
         self._sync_history_data()
         print("✅ 履歴データを同期しました")
         
+        # 各システムの履歴を修復
+        try:
+            # CEAシステムの履歴修復
+            if hasattr(self.cea_system, 'calculation_history'):
+                self.cea_system._save_calculation_history()
+                print("✅ CEA履歴を修復しました")
+            
+            # 発電システムの履歴修復
+            if hasattr(self.power_system, 'generation_history'):
+                self.power_system._save_generation_history()
+                print("✅ 発電履歴を修復しました")
+            
+            # 観測システムの履歴修復
+            if hasattr(self.optics_system, 'observation_history'):
+                self.optics_system._save_observation_history()
+                print("✅ 観測履歴を修復しました")
+            
+            # マイニングシステムの履歴修復
+            if hasattr(self.miner, 'mining_history'):
+                self.miner._save_mining_history()
+                print("✅ マイニング履歴を修復しました")
+                
+        except Exception as e:
+            print(f"⚠️ システム履歴修復エラー: {e}")
+        
         # 総行動回数を修正
         total_activities = (
             len(self.game_engine.wallet.get('cea_calculations', [])) +
@@ -960,6 +1216,292 @@ class CryptoAdventureRPG:
         # 修復後の整合性チェック
         print("\n🔍 修復後の整合性チェック:")
         self._check_save_data_integrity()
+    
+    def _record_activity(self, activity_type: str, details: Dict):
+        """活動をテキストファイルに記録"""
+        try:
+            # 日付ベースのファイル名を作成
+            date_str = self._get_date_string(self.current_day)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"activity_log_{date_str}_{timestamp}.txt"
+            filepath = self.data_dir / "activity_logs" / filename
+            
+            # 活動ログを作成
+            log_content = self._create_activity_log(activity_type, details, timestamp)
+            
+            # ファイルに書き込み
+            with open(filepath, 'w', encoding='utf-8') as f:
+                f.write(log_content)
+            
+            print(f"📝 活動記録を保存しました: {filename}")
+            return True
+            
+        except Exception as e:
+            print(f"❌ 活動記録エラー: {e}")
+            return False
+    
+    def _create_activity_log(self, activity_type: str, details: Dict, timestamp: str) -> str:
+        """活動ログの内容を作成"""
+        log_lines = []
+        
+        # ヘッダー
+        log_lines.append("=" * 60)
+        log_lines.append("🚀 Crypto Adventure RPG - 活動記録")
+        log_lines.append("=" * 60)
+        log_lines.append(f"📅 日付: {self._get_date_string(self.current_day)}")
+        log_lines.append(f"⏰ 時刻: {timestamp}")
+        log_lines.append(f"🎮 ゲーム日: Day {self.current_day}")
+        log_lines.append(f"💎 経験値: {self.game_engine.state.get('experience', 0)}")
+        log_lines.append(f"💰 Crypto: {self.game_engine.wallet['crypto_balance']:.6f} XMR")
+        log_lines.append("")
+        
+        # 活動タイプに応じた詳細
+        if activity_type == "cea_calculation":
+            log_lines.append("🚀 CEA計算記録")
+            log_lines.append("-" * 30)
+            log_lines.append(f"燃料: {details.get('fuel', 'N/A')}")
+            log_lines.append(f"酸化剤: {details.get('oxidizer', 'N/A')}")
+            log_lines.append(f"燃焼室圧力: {details.get('Pc', 'N/A')} bar")
+            log_lines.append(f"混合比: {details.get('MR', 'N/A')}")
+            log_lines.append(f"比推力（真空）: {details.get('isp_vacuum', 'N/A')} s")
+            log_lines.append(f"比推力（海面）: {details.get('isp_sea_level', 'N/A')} s")
+            log_lines.append(f"燃焼温度: {details.get('Tc', 'N/A')} K")
+            log_lines.append(f"比熱比: {details.get('gamma', 'N/A')}")
+            log_lines.append(f"推力係数: {details.get('Cf', 'N/A')}")
+            
+        elif activity_type == "power_generation":
+            log_lines.append("⚡ 発電方法記録")
+            log_lines.append("-" * 30)
+            log_lines.append(f"発電方法: {details.get('method', 'N/A')}")
+            log_lines.append(f"容量: {details.get('capacity', 'N/A')} kW")
+            log_lines.append(f"年間発電量: {details.get('annual_generation', 'N/A')} kWh")
+            log_lines.append(f"効率: {details.get('efficiency', 'N/A')}%")
+            log_lines.append(f"建設コスト: {details.get('construction_cost', 'N/A')} 万円")
+            log_lines.append(f"運用コスト: {details.get('operation_cost', 'N/A')} 万円/年")
+            
+        elif activity_type == "optics_observation":
+            log_lines.append("🔭 天体観測記録")
+            log_lines.append("-" * 30)
+            log_lines.append(f"観測対象: {details.get('target', 'N/A')}")
+            log_lines.append(f"観測方法: {details.get('method', 'N/A')}")
+            log_lines.append(f"観測時間: {details.get('duration_minutes', 'N/A')} 分")
+            log_lines.append(f"使用機材: {details.get('equipment', 'N/A')}")
+            log_lines.append(f"観測条件: {details.get('conditions', 'N/A')}")
+            log_lines.append(f"発見内容: {details.get('discoveries', 'N/A')}")
+            
+        elif activity_type == "mining_session":
+            log_lines.append("⛏️ マイニングセッション記録")
+            log_lines.append("-" * 30)
+            log_lines.append(f"マイニングソフト: {details.get('miner_software', 'N/A')}")
+            log_lines.append(f"プール: {details.get('pool', 'N/A')}")
+            log_lines.append(f"ハッシュレート: {details.get('hashrate', 'N/A')} H/s")
+            log_lines.append(f"消費電力: {details.get('power_consumption', 'N/A')} W")
+            log_lines.append(f"効率: {details.get('efficiency', 'N/A')} H/s/W")
+            log_lines.append(f"獲得XMR: {details.get('xmr_earned', 'N/A')} XMR")
+            log_lines.append(f"セッション時間: {details.get('duration_minutes', 'N/A')} 分")
+        
+        # 報酬情報
+        log_lines.append("")
+        log_lines.append("🎁 報酬情報")
+        log_lines.append("-" * 30)
+        log_lines.append(f"基本報酬: {details.get('base_reward', 0)} 経験値")
+        log_lines.append(f"追加報酬: {details.get('bonus_reward', 0)} 経験値")
+        log_lines.append(f"連続活動ボーナス: {self.consecutive_days_bonus} 経験値")
+        log_lines.append(f"総獲得経験値: {details.get('total_experience', 0)}")
+        log_lines.append(f"獲得Crypto: {details.get('crypto_earned', 0):.6f} XMR")
+        
+        # フッター
+        log_lines.append("")
+        log_lines.append("=" * 60)
+        log_lines.append("📝 この記録は自動生成されました")
+        log_lines.append("=" * 60)
+        
+        return "\n".join(log_lines)
+    
+    def _get_activity_reward(self, activity_type: str, details: Dict) -> Dict:
+        """活動に対する報酬を計算"""
+        base_rewards = {
+            'cea_calculation': 50,
+            'power_generation': 40,
+            'optics_observation': 30,
+            'mining_session': 25
+        }
+        
+        base_reward = base_rewards.get(activity_type, 10)
+        bonus_reward = 0
+        crypto_earned = 0
+        
+        # 活動タイプに応じた追加報酬
+        if activity_type == "cea_calculation":
+            # 高エネルギー推進剤の使用でボーナス
+            high_energy_propellants = ['UDMH', 'F2', 'ClF3', 'N2F4']
+            if details.get('fuel') in high_energy_propellants or details.get('oxidizer') in high_energy_propellants:
+                bonus_reward += 20
+                crypto_earned += 0.001
+            
+            # 高比推力でボーナス
+            if details.get('isp_vacuum', 0) > 400:
+                bonus_reward += 15
+                crypto_earned += 0.0005
+                
+        elif activity_type == "power_generation":
+            # 高効率発電でボーナス
+            if details.get('efficiency', 0) > 80:
+                bonus_reward += 15
+                crypto_earned += 0.0005
+                
+        elif activity_type == "optics_observation":
+            # 長時間観測でボーナス
+            if details.get('duration_minutes', 0) > 60:
+                bonus_reward += 10
+                crypto_earned += 0.0003
+                
+        elif activity_type == "mining_session":
+            # 高効率マイニングでボーナス
+            if details.get('efficiency', 0) > 100:
+                bonus_reward += 10
+                crypto_earned += 0.0002
+        
+        # 連続活動ボーナス
+        consecutive_bonus = self.consecutive_days_bonus
+        
+        total_experience = base_reward + bonus_reward + consecutive_bonus
+        
+        return {
+            'base_reward': base_reward,
+            'bonus_reward': bonus_reward,
+            'consecutive_bonus': consecutive_bonus,
+            'total_experience': total_experience,
+            'crypto_earned': crypto_earned
+        }
+    
+    def _advance_to_next_day(self):
+        """次の日へ進む"""
+        print(f"\n📅 次の日へ進む")
+        print("="*40)
+        
+        # 現在の状態を表示
+        print(f"現在の日: Day {self.current_day}")
+        print(f"経験値: {self.game_engine.state.get('experience', 0)}")
+        print(f"Crypto: {self.game_engine.wallet['crypto_balance']:.6f} XMR")
+        
+        # 連続活動ボーナスを計算
+        consecutive_days = self._get_consecutive_active_days()
+        if consecutive_days > 0:
+            self.consecutive_days_bonus = min(consecutive_days * 5, 50)  # 最大50経験値
+            print(f"🔥 連続{consecutive_days}日活動ボーナス: +{self.consecutive_days_bonus} 経験値")
+        
+        # 確認
+        confirm = input(f"\n次の日（Day {self.current_day + 1}）に進みますか？ (y/n): ").strip().lower()
+        
+        if confirm in ['y', 'yes', 'はい', '1']:
+            try:
+                # GameEngineで次の日へ進む
+                if self.game_engine.advance_to_next_day():
+                    # 状態を同期
+                    self.current_day = self.game_engine.state.get('current_day', 1)
+                    
+                    print(f"✅ Day {self.current_day} に進みました！")
+                    print(f"📅 新しい日の始まりです")
+                    
+                    # 日報の表示
+                    self._show_daily_report()
+                    
+                    # 自動保存
+                    self._save_game_state()
+                    print("💾 ゲーム状態を自動保存しました")
+                    
+                else:
+                    print("❌ 次の日への進行に失敗しました")
+                    
+            except Exception as e:
+                print(f"❌ エラーが発生しました: {e}")
+        else:
+            print("🔄 次の日への進行をキャンセルしました")
+    
+    def _show_daily_report(self):
+        """日報を表示"""
+        print(f"\n📊 Day {self.current_day} 日報")
+        print("-" * 30)
+        
+        # 前日の統計を表示
+        previous_day = self.current_day - 1
+        if previous_day > 0:
+            print(f"📈 Day {previous_day} の成果:")
+            
+            # 前日の実際の活動を取得
+            previous_activities = self._get_previous_day_activities(previous_day)
+            
+            if previous_activities:
+                print("   📝 前日の活動記録:")
+                for activity in previous_activities:
+                    print(f"      {activity}")
+            else:
+                print("   📝 前日は休憩日でした")
+        
+        # 新しい日の目標
+        print(f"\n🎯 Day {self.current_day} の目標:")
+        print("   💪 3つの行動を活用して学習を進めましょう")
+        print("   🚀 新しい推進剤の組み合わせを試してみましょう")
+        print("   ⚡ 発電方法の研究を深めましょう")
+        print("   🔭 天体観測で新しい発見をしましょう")
+        print("   ⛏️ マイニングでCryptoを稼ぎましょう")
+    
+    def _get_previous_day_activities(self, day: int) -> List[str]:
+        """指定日の実際の活動を取得"""
+        activities = []
+        
+        # 日付文字列を作成（YYYY-MM-DD形式）
+        date_str = self._get_date_string(day)
+        
+        # CEA計算の確認
+        cea_count = self._count_activities_by_date('cea_calculations', date_str)
+        if cea_count > 0:
+            activities.append(f"🚀 CEA計算: {cea_count}回")
+        
+        # 発電記録の確認
+        power_count = self._count_activities_by_date('plant_designs', date_str)
+        if power_count > 0:
+            activities.append(f"⚡ 発電記録: {power_count}回")
+        
+        # 天体観測の確認
+        optics_count = self._count_activities_by_date('optics_observations', date_str)
+        if optics_count > 0:
+            activities.append(f"🔭 天体観測: {optics_count}回")
+        
+        # マイニングの確認
+        mining_count = self._count_activities_by_date('mining_history', date_str)
+        if mining_count > 0:
+            activities.append(f"⛏️ マイニング: {mining_count}セッション")
+        
+        return activities
+    
+    def _count_activities_by_date(self, activity_type: str, date_str: str) -> int:
+        """指定日の活動回数をカウント"""
+        try:
+            activities = self.game_engine.wallet.get(activity_type, [])
+            count = 0
+            
+            for activity in activities:
+                timestamp = activity.get('timestamp', '')
+                if timestamp.startswith(date_str):
+                    count += 1
+            
+            return count
+        except Exception as e:
+            print(f"❌ 活動カウントエラー: {e}")
+            return 0
+    
+    def _get_date_string(self, day: int) -> str:
+        """指定日の日付文字列を取得"""
+        try:
+            # ゲーム開始日から指定日数後の日付を計算
+            game_start = datetime.fromisoformat(self.game_engine.state.get('game_start_date', datetime.now().isoformat()))
+            target_date = game_start + timedelta(days=day-1)
+            return target_date.strftime('%Y-%m-%d')
+        except Exception as e:
+            print(f"❌ 日付計算エラー: {e}")
+            return datetime.now().strftime('%Y-%m-%d')
 
 def main():
     """メイン関数"""

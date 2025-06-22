@@ -8,7 +8,7 @@
 import json
 import os
 from pathlib import Path
-import datetime
+from datetime import datetime
 from typing import Dict, List, Optional
 from audio_manager import AudioManager
 from reality_connector import RealityConnector
@@ -22,10 +22,6 @@ class GameEngine:
         # ゲーム状態ファイル
         self.state_file = Path("state.json")
         self.wallet_file = Path("wallet.json")
-        
-        # 経験値とCryptoの初期化
-        self.experience = 0
-        self.crypto = 0.0
         
         # 音声管理システムの初期化
         self.audio_manager = AudioManager(data_dir)
@@ -62,12 +58,12 @@ class GameEngine:
         """デフォルトのゲーム状態を作成"""
         self.state = {
             "current_day": 1,
-            "actions_remaining": 3,
+            "experience": 0,
             "total_actions": 0,
             "titles": [],
             "story_progress": 0,
-            "last_action_date": datetime.datetime.now().isoformat(),
-            "game_start_date": datetime.datetime.now().isoformat(),
+            "last_action_date": datetime.now().isoformat(),
+            "game_start_date": datetime.now().isoformat(),
             "achievements": [],
             "quests": [],
             "energy_balance": 0.0
@@ -244,7 +240,7 @@ class GameEngine:
                     'name': title['name'],
                     'description': title['description'],
                     'category': title.get('category', 'general'),
-                    'earned_date': datetime.datetime.now().isoformat(),
+                    'earned_date': datetime.now().isoformat(),
                     'earned_day': self.state['current_day'],
                     'stats_at_earning': stats.copy()
                 }
@@ -435,6 +431,22 @@ class GameEngine:
             return True
         return False
     
+    def advance_to_next_day(self) -> bool:
+        """次の日へ進む（メインメニュー用）"""
+        try:
+            # advance_dayメソッドを呼び出し
+            result = self.advance_day()
+            
+            # 成功した場合、状態を更新
+            if result:
+                return True
+            else:
+                return False
+                
+        except Exception as e:
+            print(f"❌ 次の日への進行でエラーが発生: {e}")
+            return False
+    
     def advance_day(self) -> Dict:
         """次の日へ進む"""
         print(f"\n🌅 {self.state['current_day']}日目を終了")
@@ -448,7 +460,6 @@ class GameEngine:
         
         # 日付更新
         self.state['current_day'] += 1
-        self.state['actions_remaining'] = 3
         self.state['story_progress'] += 1
         
         # 日次リセット
@@ -550,7 +561,6 @@ class GameEngine:
         
         return {
             'current_day': self.state['current_day'],
-            'actions_remaining': self.state['actions_remaining'],
             'total_actions': self.state['total_actions'],
             'story_progress': self.state['story_progress'],
             'titles': self.state['titles'],
@@ -595,13 +605,12 @@ class GameEngine:
     
     def add_experience(self, experience: int):
         """経験値を追加"""
-        # 現在の実装では経験値システムは簡易版
-        # 将来的にはレベルシステムなどに拡張可能
-        if not hasattr(self, 'experience'):
-            self.experience = 0
+        if 'experience' not in self.state:
+            self.state['experience'] = 0
         
-        self.experience += experience
-        print(f"💎 経験値 +{experience} 獲得! (総経験値: {self.experience})")
+        self.state['experience'] += experience
+        self.save_state()
+        print(f"💎 経験値 +{experience} 獲得! (総経験値: {self.state.get('experience', 0)})")
         
         # 経験値獲得時の効果音
         self.audio_manager.play_effect('action_select')
@@ -609,7 +618,6 @@ class GameEngine:
     def add_crypto(self, amount: float):
         """Cryptoを追加"""
         self.wallet['crypto_balance'] += amount
-        self.crypto += amount
         self.save_wallet()
         print(f"💰 Crypto +{amount:.6f} XMR 獲得! (残高: {self.wallet['crypto_balance']:.6f} XMR)")
         
@@ -622,7 +630,6 @@ class GameEngine:
         
         # 基本統計
         print(f"   📅 現在の日: {self.state['current_day']}日目")
-        print(f"   ⚡ 残り行動回数: {self.state['actions_remaining']}/3")
         print(f"   💰 日次Crypto残高: {self.wallet['crypto_balance']:.6f} XMR")
         print(f"   ⚡ 日次消費電力: {self.wallet['energy_consumed']:.2f} kWh")
         print(f"   🌞 日次発電量: {self.wallet['energy_generated']:.2f} kWh")
@@ -647,8 +654,8 @@ class GameEngine:
         print(f"   🏆 獲得称号: {earned_titles}個")
         
         # 経験値統計（存在する場合）
-        if hasattr(self, 'experience'):
-            print(f"   💎 総経験値: {self.experience}")
+        if 'experience' in self.state:
+            print(f"   💎 総経験値: {self.state['experience']}")
         
         print(f"\n💡 ヒント:")
         print(f"   • 発電監視・ミッションで発電データを記録するとミッションが進行します")

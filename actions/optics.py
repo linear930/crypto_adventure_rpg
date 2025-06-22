@@ -16,18 +16,26 @@ from datetime import datetime
 class AstronomicalObservationSystem:
     def __init__(self, config: Dict):
         self.config = config
-        self.optics_dir = Path(config.get('output_dir', 'data/astronomical_observations'))
+        self.optics_dir = Path("data/optics_observations")
         self.optics_dir.mkdir(exist_ok=True)
         
         # 画像保存ディレクトリ
         self.images_dir = self.optics_dir / "images"
         self.images_dir.mkdir(exist_ok=True)
         
-        # 観測履歴
-        self.observation_history = []
+        # 履歴ファイルの初期化
+        self.history_file = self.optics_dir / "optics_observations.json"
+        self.observation_history = self._load_observation_history()
         
         # 学習目標
         self.learning_goals = self._initialize_learning_goals()
+        
+        # GameEngineへの参照を追加
+        self.game_engine = None
+        
+    def set_game_engine(self, game_engine):
+        """GameEngineへの参照を設定"""
+        self.game_engine = game_engine
         
     def _initialize_learning_goals(self) -> Dict:
         """学習目標の初期化"""
@@ -435,6 +443,7 @@ class AstronomicalObservationSystem:
         print(f"\n🔭 天体観測記録")
         print("="*40)
         print("💡 入力中に「abort」と入力すると記録を中断できます")
+        print("💡 入力中に「back」と入力すると一つ前の入力に戻れます")
         print("-" * 40)
         
         # 観測対象の選択
@@ -469,6 +478,9 @@ class AstronomicalObservationSystem:
             if choice.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
+            if choice.lower() == "back":
+                print("🔄 最初の入力なので戻る場所がありません。記録を中断します。")
+                return None
             choice = choice or "1"
             if choice in target_categories:
                 category = target_categories[choice]
@@ -489,16 +501,46 @@ class AstronomicalObservationSystem:
         if observation_date.lower() == "abort":
             print("❌ 記録を中断しました")
             return None
+        if observation_date.lower() == "back":
+            print("🔄 一つ前の入力に戻ります")
+            target_name = input("天体名 (例: 木星、M31、ベガ): ").strip()
+            if target_name.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
+            observation_date = input("観測日時 (YYYY-MM-DD HH:MM): ").strip()
+            if observation_date.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
         
         location = input("観測場所: ").strip()
         if location.lower() == "abort":
             print("❌ 記録を中断しました")
             return None
+        if location.lower() == "back":
+            print("🔄 一つ前の入力に戻ります")
+            observation_date = input("観測日時 (YYYY-MM-DD HH:MM): ").strip()
+            if observation_date.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
+            location = input("観測場所: ").strip()
+            if location.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
         
         weather = input("天候 (例: 晴れ、曇り、雨): ").strip()
         if weather.lower() == "abort":
             print("❌ 記録を中断しました")
             return None
+        if weather.lower() == "back":
+            print("🔄 一つ前の入力に戻ります")
+            location = input("観測場所: ").strip()
+            if location.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
+            weather = input("天候 (例: 晴れ、曇り、雨): ").strip()
+            if weather.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
         
         # 機材情報入力
         print(f"\n🛠️ 使用機材:")
@@ -506,26 +548,76 @@ class AstronomicalObservationSystem:
         if telescope.lower() == "abort":
             print("❌ 記録を中断しました")
             return None
+        if telescope.lower() == "back":
+            print("🔄 一つ前の入力に戻ります")
+            weather = input("天候 (例: 晴れ、曇り、雨): ").strip()
+            if weather.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
+            telescope = input("望遠鏡 (例: 8インチ反射、10cm屈折): ").strip()
+            if telescope.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
         
         eyepiece = input("アイピース (例: 25mm、10mm): ").strip()
         if eyepiece.lower() == "abort":
             print("❌ 記録を中断しました")
             return None
+        if eyepiece.lower() == "back":
+            print("🔄 一つ前の入力に戻ります")
+            telescope = input("望遠鏡 (例: 8インチ反射、10cm屈折): ").strip()
+            if telescope.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
+            eyepiece = input("アイピース (例: 25mm、10mm): ").strip()
+            if eyepiece.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
         
         camera = input("カメラ (例: 一眼レフ、スマホ、なし): ").strip()
         if camera.lower() == "abort":
             print("❌ 記録を中断しました")
             return None
+        if camera.lower() == "back":
+            print("🔄 一つ前の入力に戻ります")
+            eyepiece = input("アイピース (例: 25mm、10mm): ").strip()
+            if eyepiece.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
+            camera = input("カメラ (例: 一眼レフ、スマホ、なし): ").strip()
+            if camera.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
         
         mount = input("架台 (例: 経緯台、赤道儀): ").strip()
         if mount.lower() == "abort":
             print("❌ 記録を中断しました")
             return None
+        if mount.lower() == "back":
+            print("🔄 一つ前の入力に戻ります")
+            camera = input("カメラ (例: 一眼レフ、スマホ、なし): ").strip()
+            if camera.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
+            mount = input("架台 (例: 経緯台、赤道儀): ").strip()
+            if mount.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
         
         filters = input("フィルター (例: 月面フィルター、光害カット): ").strip()
         if filters.lower() == "abort":
             print("❌ 記録を中断しました")
             return None
+        if filters.lower() == "back":
+            print("🔄 一つ前の入力に戻ります")
+            mount = input("架台 (例: 経緯台、赤道儀): ").strip()
+            if mount.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
+            filters = input("フィルター (例: 月面フィルター、光害カット): ").strip()
+            if filters.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
         
         # 観測条件入力
         print(f"\n🌡️ 観測条件:")
@@ -534,24 +626,67 @@ class AstronomicalObservationSystem:
             if temp_input.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
+            if temp_input.lower() == "back":
+                print("🔄 一つ前の入力に戻ります")
+                filters = input("フィルター (例: 月面フィルター、光害カット): ").strip()
+                if filters.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
+                temp_input = input("気温 (°C) [20]: ").strip()
+                if temp_input.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
             temperature = float(temp_input or "20")
             
             humidity_input = input("湿度 (%) [60]: ").strip()
             if humidity_input.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
+            if humidity_input.lower() == "back":
+                print("🔄 一つ前の入力に戻ります")
+                temp_input = input("気温 (°C) [20]: ").strip()
+                if temp_input.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
+                temperature = float(temp_input or "20")
+                humidity_input = input("湿度 (%) [60]: ").strip()
+                if humidity_input.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
             humidity = float(humidity_input or "60")
             
             seeing = input("シーイング (1-10) [5]: ").strip()
             if seeing.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
+            if seeing.lower() == "back":
+                print("🔄 一つ前の入力に戻ります")
+                humidity_input = input("湿度 (%) [60]: ").strip()
+                if humidity_input.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
+                humidity = float(humidity_input or "60")
+                seeing = input("シーイング (1-10) [5]: ").strip()
+                if seeing.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
             seeing = seeing or "5"
             
             transparency = input("透明度 (1-10) [5]: ").strip()
             if transparency.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
+            if transparency.lower() == "back":
+                print("🔄 一つ前の入力に戻ります")
+                seeing = input("シーイング (1-10) [5]: ").strip()
+                if seeing.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
+                seeing = seeing or "5"
+                transparency = input("透明度 (1-10) [5]: ").strip()
+                if transparency.lower() == "abort":
+                    print("❌ 記録を中断しました")
+                    return None
             transparency = transparency or "5"
             
         except ValueError:
@@ -564,16 +699,47 @@ class AstronomicalObservationSystem:
         if magnification.lower() == "abort":
             print("❌ 記録を中断しました")
             return None
+        if magnification.lower() == "back":
+            print("🔄 一つ前の入力に戻ります")
+            transparency = input("透明度 (1-10) [5]: ").strip()
+            if transparency.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
+            transparency = transparency or "5"
+            magnification = input("倍率: ").strip()
+            if magnification.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
         
         exposure_time = input("露光時間 (秒): ").strip()
         if exposure_time.lower() == "abort":
             print("❌ 記録を中断しました")
             return None
+        if exposure_time.lower() == "back":
+            print("🔄 一つ前の入力に戻ります")
+            magnification = input("倍率: ").strip()
+            if magnification.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
+            exposure_time = input("露光時間 (秒): ").strip()
+            if exposure_time.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
         
         notes = input("観測メモ (見え方、特徴など): ").strip()
         if notes.lower() == "abort":
             print("❌ 記録を中断しました")
             return None
+        if notes.lower() == "back":
+            print("🔄 一つ前の入力に戻ります")
+            exposure_time = input("露光時間 (秒): ").strip()
+            if exposure_time.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
+            notes = input("観測メモ (見え方、特徴など): ").strip()
+            if notes.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
         
         # 写真の処理
         photo_path = self._handle_photo_upload()
@@ -620,6 +786,7 @@ class AstronomicalObservationSystem:
         
         # ファイルに保存
         self._save_observation_record(result)
+        self._save_observation_history()
         
         print(f"\n✅ 天体観測を記録しました!")
         print(f"   🌌 対象: {target_name}")
@@ -817,6 +984,26 @@ class AstronomicalObservationSystem:
             elif goal['id'] == 'polar_night_challenger' and '極夜' in result['results']['notes']:
                 goal['current'] = 1
     
+    def _load_observation_history(self) -> List[Dict]:
+        """観測履歴を読み込み"""
+        if self.history_file.exists():
+            try:
+                with open(self.history_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    return data.get('observations', [])
+            except Exception as e:
+                print(f"⚠️ 観測履歴読み込みエラー: {e}")
+        return []
+    
+    def _save_observation_history(self):
+        """観測履歴をファイルに保存"""
+        try:
+            data = {'observations': self.observation_history}
+            with open(self.history_file, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"❌ 観測履歴保存エラー: {e}")
+    
     def _save_observation_record(self, result: Dict):
         """観測記録をファイルに保存"""
         timestamp = int(time.time())
@@ -829,6 +1016,14 @@ class AstronomicalObservationSystem:
             print(f"💾 観測記録を保存: {filepath}")
         except Exception as e:
             print(f"❌ 保存エラー: {e}")
+        
+        # GameEngineのウォレットにも保存
+        if self.game_engine:
+            if 'optics_observations' not in self.game_engine.wallet:
+                self.game_engine.wallet['optics_observations'] = []
+            self.game_engine.wallet['optics_observations'].append(result)
+            self.game_engine.save_wallet()
+            print("💾 GameEngineウォレットに保存しました")
     
     def show_learning_goals(self, selected_category: str = "all"):
         """学習目標を表示"""
