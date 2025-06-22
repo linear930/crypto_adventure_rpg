@@ -38,6 +38,7 @@ cea/
 secrets.json
 api_keys.json
 config_secrets.json
+wallet.json
 
 # Game data and logs
 data/game_state.json
