@@ -73,29 +73,40 @@ class CryptoAdventureRPG:
     
     def _load_game_state(self):
         """ゲーム状態を読み込み"""
-        save_file = Path("data/game_state.json")
+        # GameEngineの状態を読み込み（これがメインのセーブデータ）
+        self.game_engine.load_state()
+        self.game_engine.load_wallet()
         
+        # main.pyの状態をGameEngineと同期
+        self.current_day = self.game_engine.state.get('current_day', 1)
+        self.actions_remaining = self.game_engine.state.get('actions_remaining', 3)
+        
+        # 日付チェック（最終行動日から経過日数を計算）
+        last_action_date = self.game_engine.state.get('last_action_date')
+        if last_action_date:
+            try:
+                last_time = datetime.fromisoformat(last_action_date)
+                now = datetime.now()
+                days_diff = (now - last_time).days
+                
+                if days_diff >= 1:
+                    print(f"📅 {days_diff}日経過しました。新しい日の始まりです！")
+                    # 新しい日の処理はGameEngineで行われるため、ここでは表示のみ
+            except Exception as e:
+                print(f"⚠️ 日付チェックエラー: {e}")
+        
+        # 旧式のセーブファイル（data/game_state.json）も確認
+        save_file = Path("data/game_state.json")
         if save_file.exists():
             try:
                 with open(save_file, 'r', encoding='utf-8') as f:
-                    state = json.load(f)
-                    self.current_day = state.get('current_day', 1)
-                    self.actions_remaining = state.get('actions_remaining', 3)
-                    self.last_action_time = state.get('last_action_time')
-                    
-                    # 日付チェック
-                    if self.last_action_time:
-                        last_time = datetime.fromisoformat(self.last_action_time)
-                        now = datetime.now()
-                        days_diff = (now - last_time).days
-                        
-                        if days_diff >= 1:
-                            self.current_day += days_diff
-                            self.actions_remaining = 3
-                            print(f"📅 {days_diff}日経過しました。新しい日の始まりです！")
-                    
+                    old_state = json.load(f)
+                    # 旧式データがあれば、GameEngineの状態を優先
+                    print("📂 セーブデータを読み込みました")
             except Exception as e:
-                print(f"⚠️ ゲーム状態読み込みエラー: {e}")
+                print(f"⚠️ 旧式セーブデータ読み込みエラー: {e}")
+        else:
+            print("🆕 新しいゲームを開始します")
     
     def _save_game_state(self):
         """ゲーム状態を保存"""
@@ -135,10 +146,11 @@ class CryptoAdventureRPG:
             print("   7. 🎯 学習目標確認")
             print("   8. 🎵 BGM変更")
             print("   9. 💾 ゲーム保存")
-            print("   10. ❌ 終了")
+            print("   10. 📂 セーブデータ読み込み")
+            print("   11. ❌ 終了")
             
             try:
-                choice = input(f"\n選択してください (1-10): ").strip()
+                choice = input(f"\n選択してください (1-11): ").strip()
                 
                 if choice == "1":
                     self._cea_menu()
@@ -160,6 +172,8 @@ class CryptoAdventureRPG:
                     self._save_game_state()
                     print("✅ ゲームを保存しました")
                 elif choice == "10":
+                    self._load_game_menu()
+                elif choice == "11":
                     print("👋 ゲームを終了します。お疲れ様でした！")
                     break
                 else:
@@ -524,12 +538,17 @@ class CryptoAdventureRPG:
         """行動回数を消費"""
         if self.actions_remaining > 0:
             self.actions_remaining -= 1
-            print(f"⚡ 残り行動: {self.actions_remaining}/3")
             
-            if self.actions_remaining == 0:
-                print("🌙 今日の行動回数が終了しました。明日また冒険しましょう！")
-                self.current_day += 1
-                self.actions_remaining = 3
+            # GameEngineの行動回数も更新
+            if self.game_engine.use_action():
+                # GameEngineの状態と同期
+                self.current_day = self.game_engine.state.get('current_day', 1)
+                self.actions_remaining = self.game_engine.state.get('actions_remaining', 3)
+                print(f"⚡ 行動を実行しました (残り: {self.actions_remaining}/3)")
+            else:
+                print("❌ 行動回数が不足しています")
+        else:
+            print("❌ 今日の行動回数が終了しました")
     
     def _bgm_menu(self):
         """BGM変更メニュー"""
@@ -583,6 +602,78 @@ class CryptoAdventureRPG:
             print("❌ 無効な入力です")
         except Exception as e:
             print(f"❌ BGM変更エラー: {e}")
+    
+    def _load_game_menu(self):
+        """セーブデータ読み込みメニュー"""
+        print(f"\n📂 セーブデータ読み込み")
+        print("="*40)
+        print("1. 🔄 現在のセーブデータを再読み込み")
+        print("2. 📊 セーブデータ情報を表示")
+        print("3. 🔙 戻る")
+        
+        try:
+            choice = input("選択してください (1-3): ").strip()
+            
+            if choice == "1":
+                self._reload_game_state()
+            elif choice == "2":
+                self._show_save_data_info()
+            elif choice == "3":
+                return
+            else:
+                print("❌ 無効な選択です")
+                
+        except Exception as e:
+            print(f"❌ エラーが発生しました: {e}")
+    
+    def _reload_game_state(self):
+        """ゲーム状態を再読み込み"""
+        print("🔄 ゲーム状態を再読み込み中...")
+        
+        # GameEngineの状態を再読み込み
+        self.game_engine.load_state()
+        self.game_engine.load_wallet()
+        
+        # main.pyの状態をGameEngineと同期
+        self.current_day = self.game_engine.state.get('current_day', 1)
+        self.actions_remaining = self.game_engine.state.get('actions_remaining', 3)
+        
+        print("✅ ゲーム状態を再読み込みしました")
+        print(f"   📅 現在の日: {self.current_day}日目")
+        print(f"   ⚡ 残り行動: {self.actions_remaining}/3")
+        print(f"   💰 Crypto残高: {self.game_engine.wallet['crypto_balance']:.6f} XMR")
+        print(f"   💎 経験値: {self.game_engine.experience}")
+    
+    def _show_save_data_info(self):
+        """セーブデータ情報を表示"""
+        print(f"\n📊 セーブデータ情報")
+        print("="*40)
+        
+        # GameEngineの状態情報
+        print("🎮 ゲーム状態:")
+        print(f"   📅 現在の日: {self.game_engine.state.get('current_day', 1)}日目")
+        print(f"   ⚡ 残り行動: {self.game_engine.state.get('actions_remaining', 3)}/3")
+        print(f"   🏆 獲得称号数: {len(self.game_engine.state.get('titles', []))}")
+        print(f"   📈 総行動回数: {self.game_engine.state.get('total_actions', 0)}")
+        
+        print("\n💰 ウォレット情報:")
+        print(f"   💰 Crypto残高: {self.game_engine.wallet.get('crypto_balance', 0):.6f} XMR")
+        print(f"   💰 累積Crypto: {self.game_engine.wallet.get('total_crypto_balance', 0):.6f} XMR")
+        print(f"   ⚡ 消費電力: {self.game_engine.wallet.get('energy_consumed', 0):.2f} kWh")
+        print(f"   ⚡ 発電量: {self.game_engine.wallet.get('energy_generated', 0):.2f} kWh")
+        
+        print("\n📈 活動履歴:")
+        print(f"   ⛏️ マイニング回数: {len(self.game_engine.wallet.get('mining_history', []))}")
+        print(f"   🚀 CEA計算回数: {len(self.game_engine.wallet.get('cea_calculations', []))}")
+        print(f"   🏭 発電所設計回数: {len(self.game_engine.wallet.get('plant_designs', []))}")
+        print(f"   🔭 天体観測回数: {len(self.game_engine.wallet.get('optics_observations', []))}")
+        
+        # 最終更新日時
+        if 'last_action_date' in self.game_engine.state:
+            print(f"\n⏰ 最終更新: {self.game_engine.state['last_action_date'][:19]}")
+        
+        if 'game_start_date' in self.game_engine.state:
+            print(f"🎮 ゲーム開始: {self.game_engine.state['game_start_date'][:19]}")
 
 def main():
     """メイン関数"""
