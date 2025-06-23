@@ -362,6 +362,11 @@ python main.py
 - BGMはランダムに選択され、ループ再生されます
 - 音量はゲーム内の音声設定で調整可能です
 
+# Crypto Adventure RPG
+
+## 関連プロジェクト
+- [Rocket CEA Program](https://github.com/linear930/rocket_cea_program) - ロケットエンジンの化学平衡計算ツールです。 
+
 ---
 
 **Crypto Adventure RPG** - 現実と仮想を繋ぐ技術者向けRPG 
