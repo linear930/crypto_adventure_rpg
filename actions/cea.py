@@ -595,8 +595,8 @@ class CEALearningSystem:
             while True:
                 fuel_input = input("燃料を選択してください (list/番号/化学式/custom) [LH2]: ").strip()
                 if fuel_input.lower() == "abort":
-                    print("❌ 記録を中断しました")
-                    return None
+                print("❌ 記録を中断しました")
+                return None
                 if fuel_input.lower() == "back":
                     print("🔄 最初の入力なので戻る場所がありません。記録を中断します。")
                     return None
@@ -618,8 +618,8 @@ class CEALearningSystem:
             while True:
                 oxidizer_input = input("酸化剤を選択してください (list/番号/化学式/custom) [LOX]: ").strip()
                 if oxidizer_input.lower() == "abort":
-                    print("❌ 記録を中断しました")
-                    return None
+                print("❌ 記録を中断しました")
+                return None
                 if oxidizer_input.lower() == "back":
                     print("🔄 一つ前の入力に戻ります")
                     # 燃料選択に戻る
@@ -685,10 +685,10 @@ class CEALearningSystem:
                     break
                 
                 oxidizer = oxidizer or "LOX"
-                Pc_input = input("燃焼室圧力 (bar) [50]: ").strip()
-                if Pc_input.lower() == "abort":
-                    print("❌ 記録を中断しました")
-                    return None
+            Pc_input = input("燃焼室圧力 (bar) [50]: ").strip()
+            if Pc_input.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
             Pc = float(Pc_input or "50")
             
             MR_input = input("混合比 [6.0]: ").strip()
@@ -702,10 +702,10 @@ class CEALearningSystem:
                     print("❌ 記録を中断しました")
                     return None
                 Pc = float(Pc_input or "50")
-                MR_input = input("混合比 [6.0]: ").strip()
-                if MR_input.lower() == "abort":
-                    print("❌ 記録を中断しました")
-                    return None
+            MR_input = input("混合比 [6.0]: ").strip()
+            if MR_input.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
             MR = float(MR_input or "6.0")
             
             Pe_input = input("排気圧力 (bar) [1.0]: ").strip()
@@ -719,10 +719,10 @@ class CEALearningSystem:
                     print("❌ 記録を中断しました")
                     return None
                 MR = float(MR_input or "6.0")
-                Pe_input = input("排気圧力 (bar) [1.0]: ").strip()
-                if Pe_input.lower() == "abort":
-                    print("❌ 記録を中断しました")
-                    return None
+            Pe_input = input("排気圧力 (bar) [1.0]: ").strip()
+            if Pe_input.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
             Pe = float(Pe_input or "1.0")
             
         except ValueError:
@@ -744,10 +744,10 @@ class CEALearningSystem:
                     print("❌ 記録を中断しました")
                     return None
                 Pe = float(Pe_input or "1.0")
-                isp_vac_input = input("真空中比推力 (s) [400]: ").strip()
-                if isp_vac_input.lower() == "abort":
-                    print("❌ 記録を中断しました")
-                    return None
+            isp_vac_input = input("真空中比推力 (s) [400]: ").strip()
+            if isp_vac_input.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
             isp_vacuum = float(isp_vac_input or "400")
             
             isp_sl_input = input("海面比推力 (s) [350]: ").strip()
@@ -761,10 +761,10 @@ class CEALearningSystem:
                     print("❌ 記録を中断しました")
                     return None
                 isp_vacuum = float(isp_vac_input or "400")
-                isp_sl_input = input("海面比推力 (s) [350]: ").strip()
-                if isp_sl_input.lower() == "abort":
-                    print("❌ 記録を中断しました")
-                    return None
+            isp_sl_input = input("海面比推力 (s) [350]: ").strip()
+            if isp_sl_input.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
             isp_sea_level = float(isp_sl_input or "350")
             
             Tc_input = input("燃焼室温度 (K) [3500]: ").strip()
@@ -778,10 +778,10 @@ class CEALearningSystem:
                     print("❌ 記録を中断しました")
                     return None
                 isp_sea_level = float(isp_sl_input or "350")
-                Tc_input = input("燃焼室温度 (K) [3500]: ").strip()
-                if Tc_input.lower() == "abort":
-                    print("❌ 記録を中断しました")
-                    return None
+            Tc_input = input("燃焼室温度 (K) [3500]: ").strip()
+            if Tc_input.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
             Tc = float(Tc_input or "3500")
             
             gamma_input = input("比熱比 [1.2]: ").strip()
@@ -795,10 +795,10 @@ class CEALearningSystem:
                     print("❌ 記録を中断しました")
                     return None
                 Tc = float(Tc_input or "3500")
-                gamma_input = input("比熱比 [1.2]: ").strip()
-                if gamma_input.lower() == "abort":
-                    print("❌ 記録を中断しました")
-                    return None
+            gamma_input = input("比熱比 [1.2]: ").strip()
+            if gamma_input.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
             gamma = float(gamma_input or "1.2")
             
             Cf_input = input("推力係数 [1.8]: ").strip()
@@ -812,10 +812,10 @@ class CEALearningSystem:
                     print("❌ 記録を中断しました")
                     return None
                 gamma = float(gamma_input or "1.2")
-                Cf_input = input("推力係数 [1.8]: ").strip()
-                if Cf_input.lower() == "abort":
-                    print("❌ 記録を中断しました")
-                    return None
+            Cf_input = input("推力係数 [1.8]: ").strip()
+            if Cf_input.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
             Cf = float(Cf_input or "1.8")
             
         except ValueError:
@@ -835,10 +835,10 @@ class CEALearningSystem:
                 print("❌ 記録を中断しました")
                 return None
             Cf = float(Cf_input or "1.8")
-            notes = input("計算の目的、発見、学んだこと: ").strip()
-            if notes.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
+        notes = input("計算の目的、発見、学んだこと: ").strip()
+        if notes.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
         
         # 使用ツール入力
         print(f"\n🛠️ 使用ツール:")
@@ -852,10 +852,10 @@ class CEALearningSystem:
             if notes.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
-            tools = input("使用したソフトウェア/ツール (例: CEA, RPA, 自作プログラム): ").strip()
-            if tools.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
+        tools = input("使用したソフトウェア/ツール (例: CEA, RPA, 自作プログラム): ").strip()
+        if tools.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
         
         # 結果をまとめる
         result = {

@@ -53,7 +53,7 @@ class MoneroMiningLearningSystem:
     def set_game_engine(self, game_engine):
         """GameEngineへの参照を設定"""
         self.game_engine = game_engine
-    
+        
     def _initialize_learning_goals(self) -> Dict:
         """学習目標の初期化"""
         return {
@@ -154,10 +154,10 @@ class MoneroMiningLearningSystem:
             if session_name.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
-            start_time = input("開始時刻 (YYYY-MM-DD HH:MM): ").strip()
-            if start_time.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
+        start_time = input("開始時刻 (YYYY-MM-DD HH:MM): ").strip()
+        if start_time.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
         
         end_time = input("終了時刻 (YYYY-MM-DD HH:MM): ").strip()
         if end_time.lower() == "abort":
@@ -169,10 +169,10 @@ class MoneroMiningLearningSystem:
             if start_time.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
-            end_time = input("終了時刻 (YYYY-MM-DD HH:MM): ").strip()
-            if end_time.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
+        end_time = input("終了時刻 (YYYY-MM-DD HH:MM): ").strip()
+        if end_time.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
         
         # マイニング設定入力
         print(f"\n⚙️ マイニング設定:")
@@ -186,10 +186,10 @@ class MoneroMiningLearningSystem:
             if end_time.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
-            pool_url = input("プールURL [pool.supportxmr.com:3333]: ").strip()
-            if pool_url.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
+        pool_url = input("プールURL [pool.supportxmr.com:3333]: ").strip()
+        if pool_url.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
         pool_url = pool_url or "pool.supportxmr.com:3333"
         
         wallet_address = input("ウォレットアドレス: ").strip()
@@ -203,10 +203,10 @@ class MoneroMiningLearningSystem:
                 print("❌ 記録を中断しました")
                 return None
             pool_url = pool_url or "pool.supportxmr.com:3333"
-            wallet_address = input("ウォレットアドレス: ").strip()
-            if wallet_address.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
+        wallet_address = input("ウォレットアドレス: ").strip()
+        if wallet_address.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
         
         worker_name = input("ワーカー名 [crypto_adventure_worker]: ").strip()
         if worker_name.lower() == "abort":
@@ -218,10 +218,10 @@ class MoneroMiningLearningSystem:
             if wallet_address.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
-            worker_name = input("ワーカー名 [crypto_adventure_worker]: ").strip()
-            if worker_name.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
+        worker_name = input("ワーカー名 [crypto_adventure_worker]: ").strip()
+        if worker_name.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
         worker_name = worker_name or "crypto_adventure_worker"
         
         # ハードウェア情報入力
@@ -237,10 +237,10 @@ class MoneroMiningLearningSystem:
                 print("❌ 記録を中断しました")
                 return None
             worker_name = worker_name or "crypto_adventure_worker"
-            cpu_model = input("CPUモデル: ").strip()
-            if cpu_model.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
+        cpu_model = input("CPUモデル: ").strip()
+        if cpu_model.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
         
         gpu_model = input("GPUモデル (使用する場合): ").strip()
         if gpu_model.lower() == "abort":
@@ -252,10 +252,10 @@ class MoneroMiningLearningSystem:
             if cpu_model.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
-            gpu_model = input("GPUモデル (使用する場合): ").strip()
-            if gpu_model.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
+        gpu_model = input("GPUモデル (使用する場合): ").strip()
+        if gpu_model.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
         
         ram_gb = input("RAM容量 (GB): ").strip()
         if ram_gb.lower() == "abort":
@@ -267,10 +267,10 @@ class MoneroMiningLearningSystem:
             if gpu_model.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
-            ram_gb = input("RAM容量 (GB): ").strip()
-            if ram_gb.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
+        ram_gb = input("RAM容量 (GB): ").strip()
+        if ram_gb.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
         
         # マイニング結果入力
         print(f"\n📈 マイニング結果:")
@@ -285,10 +285,10 @@ class MoneroMiningLearningSystem:
                 if ram_gb.lower() == "abort":
                     print("❌ 記録を中断しました")
                     return None
-                hashrate_input = input("ハッシュレート (H/s) [1000]: ").strip()
-                if hashrate_input.lower() == "abort":
-                    print("❌ 記録を中断しました")
-                    return None
+            hashrate_input = input("ハッシュレート (H/s) [1000]: ").strip()
+            if hashrate_input.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
             hashrate = float(hashrate_input or "1000")
             
             shares_sub_input = input("提出したシェア数 [10]: ").strip()
@@ -302,10 +302,10 @@ class MoneroMiningLearningSystem:
                     print("❌ 記録を中断しました")
                     return None
                 hashrate = float(hashrate_input or "1000")
-                shares_sub_input = input("提出したシェア数 [10]: ").strip()
-                if shares_sub_input.lower() == "abort":
-                    print("❌ 記録を中断しました")
-                    return None
+            shares_sub_input = input("提出したシェア数 [10]: ").strip()
+            if shares_sub_input.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
             shares_submitted = int(shares_sub_input or "10")
             
             accepted_shares_input = input("承認されたシェア数 [8]: ").strip()
@@ -319,10 +319,10 @@ class MoneroMiningLearningSystem:
                     print("❌ 記録を中断しました")
                     return None
                 shares_submitted = int(shares_sub_input or "10")
-                accepted_shares_input = input("承認されたシェア数 [8]: ").strip()
-                if accepted_shares_input.lower() == "abort":
-                    print("❌ 記録を中断しました")
-                    return None
+            accepted_shares_input = input("承認されたシェア数 [8]: ").strip()
+            if accepted_shares_input.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
             accepted_shares = int(accepted_shares_input or "8")
             
             rejected_shares_input = input("拒否されたシェア数 [2]: ").strip()
@@ -336,10 +336,10 @@ class MoneroMiningLearningSystem:
                     print("❌ 記録を中断しました")
                     return None
                 accepted_shares = int(accepted_shares_input or "8")
-                rejected_shares_input = input("拒否されたシェア数 [2]: ").strip()
-                if rejected_shares_input.lower() == "abort":
-                    print("❌ 記録を中断しました")
-                    return None
+            rejected_shares_input = input("拒否されたシェア数 [2]: ").strip()
+            if rejected_shares_input.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
             rejected_shares = int(rejected_shares_input or "2")
             
             power_input = input("消費電力 (W) [100]: ").strip()
@@ -353,10 +353,10 @@ class MoneroMiningLearningSystem:
                     print("❌ 記録を中断しました")
                     return None
                 rejected_shares = int(rejected_shares_input or "2")
-                power_input = input("消費電力 (W) [100]: ").strip()
-                if power_input.lower() == "abort":
-                    print("❌ 記録を中断しました")
-                    return None
+            power_input = input("消費電力 (W) [100]: ").strip()
+            if power_input.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
             power_consumption = float(power_input or "100")
             
         except ValueError:
@@ -376,10 +376,10 @@ class MoneroMiningLearningSystem:
                 print("❌ 記録を中断しました")
                 return None
             power_consumption = float(power_input or "100")
-            challenges = input("課題や問題点: ").strip()
-            if challenges.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
+        challenges = input("課題や問題点: ").strip()
+        if challenges.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
         
         optimizations = input("最適化や改善点: ").strip()
         if optimizations.lower() == "abort":
@@ -391,10 +391,10 @@ class MoneroMiningLearningSystem:
             if challenges.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
-            optimizations = input("最適化や改善点: ").strip()
-            if optimizations.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
+        optimizations = input("最適化や改善点: ").strip()
+        if optimizations.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
         
         learnings = input("学んだこと: ").strip()
         if learnings.lower() == "abort":
@@ -406,10 +406,10 @@ class MoneroMiningLearningSystem:
             if optimizations.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
-            learnings = input("学んだこと: ").strip()
-            if learnings.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
+        learnings = input("学んだこと: ").strip()
+        if learnings.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
         
         # 結果をまとめる
         result = {

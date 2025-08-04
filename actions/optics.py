@@ -507,10 +507,10 @@ class AstronomicalObservationSystem:
             if target_name.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
-            observation_date = input("観測日時 (YYYY-MM-DD HH:MM): ").strip()
-            if observation_date.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
+        observation_date = input("観測日時 (YYYY-MM-DD HH:MM): ").strip()
+        if observation_date.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
         
         location = input("観測場所: ").strip()
         if location.lower() == "abort":
@@ -522,10 +522,10 @@ class AstronomicalObservationSystem:
             if observation_date.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
-            location = input("観測場所: ").strip()
-            if location.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
+        location = input("観測場所: ").strip()
+        if location.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
         
         weather = input("天候 (例: 晴れ、曇り、雨): ").strip()
         if weather.lower() == "abort":
@@ -537,10 +537,10 @@ class AstronomicalObservationSystem:
             if location.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
-            weather = input("天候 (例: 晴れ、曇り、雨): ").strip()
-            if weather.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
+        weather = input("天候 (例: 晴れ、曇り、雨): ").strip()
+        if weather.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
         
         # 機材情報入力
         print(f"\n🛠️ 使用機材:")
@@ -554,10 +554,10 @@ class AstronomicalObservationSystem:
             if weather.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
-            telescope = input("望遠鏡 (例: 8インチ反射、10cm屈折): ").strip()
-            if telescope.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
+        telescope = input("望遠鏡 (例: 8インチ反射、10cm屈折): ").strip()
+        if telescope.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
         
         eyepiece = input("アイピース (例: 25mm、10mm): ").strip()
         if eyepiece.lower() == "abort":
@@ -569,10 +569,10 @@ class AstronomicalObservationSystem:
             if telescope.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
-            eyepiece = input("アイピース (例: 25mm、10mm): ").strip()
-            if eyepiece.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
+        eyepiece = input("アイピース (例: 25mm、10mm): ").strip()
+        if eyepiece.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
         
         camera = input("カメラ (例: 一眼レフ、スマホ、なし): ").strip()
         if camera.lower() == "abort":
@@ -584,10 +584,10 @@ class AstronomicalObservationSystem:
             if eyepiece.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
-            camera = input("カメラ (例: 一眼レフ、スマホ、なし): ").strip()
-            if camera.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
+        camera = input("カメラ (例: 一眼レフ、スマホ、なし): ").strip()
+        if camera.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
         
         mount = input("架台 (例: 経緯台、赤道儀): ").strip()
         if mount.lower() == "abort":
@@ -599,10 +599,10 @@ class AstronomicalObservationSystem:
             if camera.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
-            mount = input("架台 (例: 経緯台、赤道儀): ").strip()
-            if mount.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
+        mount = input("架台 (例: 経緯台、赤道儀): ").strip()
+        if mount.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
         
         filters = input("フィルター (例: 月面フィルター、光害カット): ").strip()
         if filters.lower() == "abort":
@@ -614,10 +614,10 @@ class AstronomicalObservationSystem:
             if mount.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
-            filters = input("フィルター (例: 月面フィルター、光害カット): ").strip()
-            if filters.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
+        filters = input("フィルター (例: 月面フィルター、光害カット): ").strip()
+        if filters.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
         
         # 観測条件入力
         print(f"\n🌡️ 観測条件:")
@@ -632,10 +632,10 @@ class AstronomicalObservationSystem:
                 if filters.lower() == "abort":
                     print("❌ 記録を中断しました")
                     return None
-                temp_input = input("気温 (°C) [20]: ").strip()
-                if temp_input.lower() == "abort":
-                    print("❌ 記録を中断しました")
-                    return None
+            temp_input = input("気温 (°C) [20]: ").strip()
+            if temp_input.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
             temperature = float(temp_input or "20")
             
             humidity_input = input("湿度 (%) [60]: ").strip()
@@ -649,10 +649,10 @@ class AstronomicalObservationSystem:
                     print("❌ 記録を中断しました")
                     return None
                 temperature = float(temp_input or "20")
-                humidity_input = input("湿度 (%) [60]: ").strip()
-                if humidity_input.lower() == "abort":
-                    print("❌ 記録を中断しました")
-                    return None
+            humidity_input = input("湿度 (%) [60]: ").strip()
+            if humidity_input.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
             humidity = float(humidity_input or "60")
             
             seeing = input("シーイング (1-10) [5]: ").strip()
@@ -666,10 +666,10 @@ class AstronomicalObservationSystem:
                     print("❌ 記録を中断しました")
                     return None
                 humidity = float(humidity_input or "60")
-                seeing = input("シーイング (1-10) [5]: ").strip()
-                if seeing.lower() == "abort":
-                    print("❌ 記録を中断しました")
-                    return None
+            seeing = input("シーイング (1-10) [5]: ").strip()
+            if seeing.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
             seeing = seeing or "5"
             
             transparency = input("透明度 (1-10) [5]: ").strip()
@@ -683,10 +683,10 @@ class AstronomicalObservationSystem:
                     print("❌ 記録を中断しました")
                     return None
                 seeing = seeing or "5"
-                transparency = input("透明度 (1-10) [5]: ").strip()
-                if transparency.lower() == "abort":
-                    print("❌ 記録を中断しました")
-                    return None
+            transparency = input("透明度 (1-10) [5]: ").strip()
+            if transparency.lower() == "abort":
+                print("❌ 記録を中断しました")
+                return None
             transparency = transparency or "5"
             
         except ValueError:
@@ -706,10 +706,10 @@ class AstronomicalObservationSystem:
                 print("❌ 記録を中断しました")
                 return None
             transparency = transparency or "5"
-            magnification = input("倍率: ").strip()
-            if magnification.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
+        magnification = input("倍率: ").strip()
+        if magnification.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
         
         exposure_time = input("露光時間 (秒): ").strip()
         if exposure_time.lower() == "abort":
@@ -721,10 +721,10 @@ class AstronomicalObservationSystem:
             if magnification.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
-            exposure_time = input("露光時間 (秒): ").strip()
-            if exposure_time.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
+        exposure_time = input("露光時間 (秒): ").strip()
+        if exposure_time.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
         
         notes = input("観測メモ (見え方、特徴など): ").strip()
         if notes.lower() == "abort":
@@ -736,10 +736,10 @@ class AstronomicalObservationSystem:
             if exposure_time.lower() == "abort":
                 print("❌ 記録を中断しました")
                 return None
-            notes = input("観測メモ (見え方、特徴など): ").strip()
-            if notes.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
+        notes = input("観測メモ (見え方、特徴など): ").strip()
+        if notes.lower() == "abort":
+            print("❌ 記録を中断しました")
+            return None
         
         # 写真の処理
         photo_path = self._handle_photo_upload()
