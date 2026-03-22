@@ -17,9 +17,6 @@ def set_environment_variables():
     
     # 環境変数の設定
     env_vars = {
-        'MINING_WALLET_ADDRESS': '4BGrZRkV7jgetvovXr67st34LM8qf1rFpPfC8vymNWFwDvHnDumYBABVyuJYM2PZGjJxS7nVFSK7JRrx6QMJU48B4DhvfUk',
-        'MINING_POOL_URL': 'pool.supportxmr.com:3333',
-        'MINING_WORKER_NAME': 'crypto_adventure_worker',
         'CEA_PATH': 'C:\\CEA\\cea.exe',
         'BGM_VOLUME': '0.5',
         'EFFECT_VOLUME': '0.7',
@@ -36,10 +33,6 @@ def set_environment_variables():
             except Exception as e:
                 print(f"❌ {key} の設定に失敗: {e}")
         
-        print("\n📝 永続的な設定のため、以下のコマンドを管理者権限で実行してください:")
-        print("setx MINING_WALLET_ADDRESS 4BGrZRkV7jgetvovXr67st34LM8qf1rFpPfC8vymNWFwDvHnDumYBABVyuJYM2PZGjJxS7nVFSK7JRrx6QMJU48B4DhvfUk")
-        print("setx MINING_POOL_URL pool.supportxmr.com:3333")
-        print("setx MINING_WORKER_NAME crypto_adventure_worker")
         print("setx CEA_PATH C:\\CEA\\cea.exe")
         print("setx BGM_VOLUME 0.5")
         print("setx EFFECT_VOLUME 0.7")
@@ -54,10 +47,6 @@ def set_environment_variables():
             except Exception as e:
                 print(f"❌ {key} の設定に失敗: {e}")
         
-        print("\n📝 永続的な設定のため、以下のコマンドを実行してください:")
-        print("echo 'export MINING_WALLET_ADDRESS=4BGrZRkV7jgetvovXr67st34LM8qf1rFpPfC8vymNWFwDvHnDumYBABVyuJYM2PZGjJxS7nVFSK7JRrx6QMJU48B4DhvfUk' >> ~/.bashrc")
-        print("echo 'export MINING_POOL_URL=pool.supportxmr.com:3333' >> ~/.bashrc")
-        print("echo 'export MINING_WORKER_NAME=crypto_adventure_worker' >> ~/.bashrc")
         print("echo 'export CEA_PATH=/path/to/cea' >> ~/.bashrc")
         print("echo 'export BGM_VOLUME=0.5' >> ~/.bashrc")
         print("echo 'export EFFECT_VOLUME=0.7' >> ~/.bashrc")
@@ -73,10 +62,6 @@ def create_env_file():
     
     env_content = """# Crypto Adventure RPG 環境変数設定
 # 機密情報をここに設定してください
-
-MINING_WALLET_ADDRESS=4BGrZRkV7jgetvovXr67st34LM8qf1rFpPfC8vymNWFwDvHnDumYBABVyuJYM2PZGjJxS7nVFSK7JRrx6QMJU48B4DhvfUk
-MINING_POOL_URL=pool.supportxmr.com:3333
-MINING_WORKER_NAME=crypto_adventure_worker
 CEA_PATH=C:\\CEA\\cea.exe
 BGM_VOLUME=0.5
 EFFECT_VOLUME=0.7
@@ -101,9 +86,6 @@ def verify_configuration():
     config = config_manager.load_config()
     
     print("現在の設定:")
-    print(f"  ウォレットアドレス: {config['mining']['wallet_address']}")
-    print(f"  プールURL: {config['mining']['pool_url']}")
-    print(f"  ワーカー名: {config['mining']['worker_name']}")
     print(f"  CEAパス: {config['cea']['cea_path']}")
     print(f"  BGM音量: {config['audio']['bgm_volume']}")
     print(f"  効果音音量: {config['audio']['effect_volume']}")

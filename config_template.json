@@ -1,14 +1,6 @@
 {
   "game_name": "Crypto Adventure RPG",
   "version": "2.0.0",
-  "output_dir": "data",
-  "mining": {
-    "enabled": true,
-    "pool_url": "pool.supportxmr.com:3333",
-    "wallet_address": "YOUR_WALLET_ADDRESS_HERE",
-    "worker_name": "crypto_adventure_worker",
-    "use_simulator": true
-  },
   "power_plant": {
     "enabled": true,
     "monitoring_interval": 3600

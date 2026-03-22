@@ -38,27 +38,15 @@ def main():
     print()
     
     if os.name == 'nt':  # Windows
-        print("Windowsの場合:")
-        print("set MINING_WALLET_ADDRESS=your_wallet_address_here")
-        print("set MINING_POOL_URL=pool.supportxmr.com:3333")
-        print("set MINING_WORKER_NAME=your_worker_name")
         print("set CEA_PATH=C:\\CEA\\cea.exe")
         print()
         print("または、.envファイルを作成:")
     else:  # Unix/Linux/macOS
-        print("Unix/Linux/macOSの場合:")
-        print("export MINING_WALLET_ADDRESS=your_wallet_address_here")
-        print("export MINING_POOL_URL=pool.supportxmr.com:3333")
-        print("export MINING_WORKER_NAME=your_worker_name")
         print("export CEA_PATH=/path/to/cea")
         print()
         print("または、.envファイルを作成:")
     
     print()
-    print(".envファイルの例:")
-    print("MINING_WALLET_ADDRESS=your_wallet_address_here")
-    print("MINING_POOL_URL=pool.supportxmr.com:3333")
-    print("MINING_WORKER_NAME=your_worker_name")
     print("CEA_PATH=C:\\CEA\\cea.exe")
     print("BGM_VOLUME=0.5")
     print("EFFECT_VOLUME=0.7")
@@ -72,10 +60,6 @@ def main():
             with open(env_file, 'w', encoding='utf-8') as f:
                 f.write("# Crypto Adventure RPG 環境変数設定\n")
                 f.write("# 機密情報をここに設定してください\n")
-                f.write("\n")
-                f.write("MINING_WALLET_ADDRESS=your_wallet_address_here\n")
-                f.write("MINING_POOL_URL=pool.supportxmr.com:3333\n")
-                f.write("MINING_WORKER_NAME=your_worker_name\n")
                 f.write("CEA_PATH=C:\\CEA\\cea.exe\n")
                 f.write("BGM_VOLUME=0.5\n")
                 f.write("EFFECT_VOLUME=0.7\n")
@@ -94,9 +78,7 @@ def main():
     print("4️⃣ 必要なディレクトリの作成")
     directories = [
         "data",
-        "assets", 
         "save",
-        "data/mining_results",
         "data/cea_results",
         "data/power_plant_designs",
         "data/astronomical_observations",

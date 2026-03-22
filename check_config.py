@@ -25,15 +25,6 @@ def main():
     print(f"   出力ディレクトリ: {config.get('output_dir', '未設定')}")
     print()
     
-    # マイニング設定
-    print("⛏️ マイニング設定:")
-    mining_config = config.get('mining', {})
-    print(f"   有効: {mining_config.get('enabled', False)}")
-    print(f"   ウォレットアドレス: {mining_config.get('wallet_address', '未設定')}")
-    print(f"   プールURL: {mining_config.get('pool_url', '未設定')}")
-    print(f"   ワーカー名: {mining_config.get('worker_name', '未設定')}")
-    print(f"   シミュレーター使用: {mining_config.get('use_simulator', False)}")
-    print()
     
     # CEA設定
     print("🚀 CEA設定:")

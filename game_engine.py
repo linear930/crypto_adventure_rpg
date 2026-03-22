@@ -101,11 +101,7 @@ class GameEngine:
             "total_energy_consumed": 0.0,    # 累積消費電力
             "energy_generated": 0.0,         # 日次発電量
             "total_energy_generated": 0.0,   # 累積発電量
-            "mining_history": [],
-            "cea_calculations": [],
-            "plant_designs": [],
             "optics_observations": [],
-            "total_mining_time": 0,
             "total_cea_time": 0,
             "total_plant_time": 0,
             "total_optics_time": 0
@@ -128,20 +124,6 @@ class GameEngine:
         if not titles_file.exists():
             default_titles = {
                 "titles": [
-                    {
-                        "id": "first_mining",
-                        "name": "電力の芽生え",
-                        "description": "初めてマイニングを実行した",
-                        "condition": "mining_count >= 1",
-                        "category": "mining"
-                    },
-                    {
-                        "id": "crypto_master",
-                        "name": "クリプト仙人",
-                        "description": "1.0 XMRを獲得した",
-                        "condition": "crypto_balance >= 1.0",
-                        "category": "mining"
-                    },
                     {
                         "id": "rocket_scientist",
                         "name": "重力を操る者",
@@ -183,13 +165,6 @@ class GameEngine:
                         "description": "発電量が消費量を上回った",
                         "condition": "energy_generated > energy_consumed",
                         "category": "energy"
-                    },
-                    {
-                        "id": "persistent_miner",
-                        "name": "不屈のマイナー",
-                        "description": "マイニングを100時間実行した",
-                        "condition": "total_mining_time >= 100",
-                        "category": "mining"
                     },
                     {
                         "id": "master_engineer",
@@ -331,10 +306,7 @@ class GameEngine:
         """称号の進捗状況を取得"""
         condition = title.get('condition', '')
         
-        if condition == "mining_count >= 1":
-            current = stats['mining_count']
-            return f"{current}/1 回"
-        elif condition == "crypto_balance >= 1.0":
+        if condition == "crypto_balance >= 1.0":
             current = stats['crypto_balance']
             return f"{current:.6f}/1.0 XMR"
         elif condition == "cea_count >= 10":
@@ -352,15 +324,11 @@ class GameEngine:
         elif condition == "optics_count >= 5":
             current = stats['optics_count']
             return f"{current}/5 回"
-        elif condition == "total_mining_time >= 100":
-            current = stats['total_mining_time']
-            return f"{current}/100 時間"
         
         return ""
     
     def calculate_stats(self) -> Dict:
         """現在の統計を計算"""
-        mining_count = len(self.wallet['mining_history'])
         cea_count = len(self.wallet['cea_calculations'])
         plant_count = len(self.wallet['plant_designs'])
         optics_count = len(self.wallet['optics_observations'])
@@ -373,14 +341,12 @@ class GameEngine:
         
         # 全カテゴリマスター判定
         all_categories_master = (
-            mining_count >= 10 and
             cea_count >= 10 and
             plant_count >= 5 and
             optics_count >= 5
         )
         
         return {
-            'mining_count': mining_count,
             'cea_count': cea_count,
             'plant_count': plant_count,
             'optics_count': optics_count,
@@ -389,7 +355,6 @@ class GameEngine:
             'crypto_balance': self.wallet['crypto_balance'],
             'energy_consumed': self.wallet['energy_consumed'],
             'energy_generated': self.wallet['energy_generated'],
-            'total_mining_time': self.wallet['total_mining_time'],
             'all_categories_master': all_categories_master
         }
     
@@ -397,9 +362,7 @@ class GameEngine:
         """称号条件のチェック"""
         condition = title.get('condition', '')
         
-        if condition == "mining_count >= 1":
-            return stats['mining_count'] >= 1
-        elif condition == "crypto_balance >= 1.0":
+        if condition == "crypto_balance >= 1.0":
             return stats['crypto_balance'] >= 1.0
         elif condition == "cea_count >= 10":
             return stats['cea_count'] >= 10
@@ -413,8 +376,6 @@ class GameEngine:
             return stats['optics_count'] >= 5
         elif condition == "energy_generated > energy_consumed":
             return stats['energy_generated'] > stats['energy_consumed']
-        elif condition == "total_mining_time >= 100":
-            return stats['total_mining_time'] >= 100
         elif condition == "all_categories_master":
             return stats['all_categories_master']
         
@@ -506,17 +467,15 @@ class GameEngine:
         """今日の行動サマリー"""
         today = self.state['current_day']
         
-        today_mining = [m for m in self.wallet['mining_history'] if m.get('day') == today]
         today_cea = [c for c in self.wallet['cea_calculations'] if c.get('day') == today]
         today_plant = [p for p in self.wallet['plant_designs'] if p.get('day') == today]
         today_optics = [o for o in self.wallet['optics_observations'] if o.get('day') == today]
         
-        total_xmr_earned = sum(m.get('xmr_earned', 0) for m in today_mining)
-        total_energy_consumed = sum(m.get('power_consumption', 0) for m in today_mining)
+        total_xmr_earned = 0
+        total_energy_consumed = 0
         total_energy_generated = sum(p.get('daily_generation', 0) for p in today_plant)
         
         return {
-            'mining_count': len(today_mining),
             'cea_count': len(today_cea),
             'plant_count': len(today_plant),
             'optics_count': len(today_optics),
@@ -568,15 +527,7 @@ class GameEngine:
             'wallet': self.wallet
         }
     
-    def add_mining_result(self, result: Dict):
-        """マイニング結果を追加"""
-        self.wallet['crypto_balance'] += result.get('xmr_earned', 0)
-        self.wallet['energy_consumed'] += result.get('power_consumption', 0)
-        self.wallet['mining_history'].append(result)
-        self.wallet['total_mining_time'] += result.get('duration_minutes', 0)
-        self.save_wallet()
-        self.check_titles()
-    
+
     def add_cea_result(self, result: Dict):
         """CEA計算結果を追加"""
         self.wallet['cea_calculations'].append(result)
@@ -643,7 +594,6 @@ class GameEngine:
         # 活動統計
         stats = self.calculate_stats()
         print(f"\n📈 活動統計:")
-        print(f"   ⛏️ マイニング回数: {stats['mining_count']}回")
         print(f"   🚀 CEA計算回数: {stats['cea_count']}回")
         print(f"   📊 発電監視回数: {stats['plant_count']}回")
         print(f"   🔭 天体観測回数: {stats['optics_count']}回")

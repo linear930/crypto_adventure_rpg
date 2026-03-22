@@ -370,3 +370,32 @@ python main.py
 ---
 
 **Crypto Adventure RPG** - 現実と仮想を繋ぐ技術者向けRPG 
+
+## Windowsでのexeビルド
+
+PyInstallerを使って自己完結実行形式を作成できます。
+
+PowerShell:
+
+```powershell
+cd crypto_adventure_rpg
+./build_exe.ps1            # onedir 版（推奨）
+./build_exe.ps1 -OneFile   # onefile 版
+```
+
+またはコマンドプロンプト:
+
+```bat
+cd crypto_adventure_rpg
+build_exe.bat           
+build_exe.bat --onefile 
+```
+
+出力:
+- onedir: `dist/CryptoAdventureRPG/main.exe`
+- onefile: `dist/CryptoAdventureRPG.exe`
+
+注意:
+- 実行時は`data/`に音声等を配置してください（onedir版は同梱済み）。
+- `pygame`のオーディオ再生に必要なランタイムはPyInstallerが同梱します。
+- 実行開始時に作業ディレクトリをexeと同じ場所へ自動変更するため、相対パスの`data/`や`assets/`がそのまま機能します。 

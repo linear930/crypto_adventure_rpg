@@ -47,17 +47,6 @@ class ConfigManager:
         return self._get_default_config()
     
     def _override_with_env_vars(self, config: Dict) -> Dict:
-        """環境変数で設定を上書き"""
-        # マイニング設定
-        if os.getenv('MINING_WALLET_ADDRESS'):
-            config['mining']['wallet_address'] = os.getenv('MINING_WALLET_ADDRESS')
-        
-        if os.getenv('MINING_POOL_URL'):
-            config['mining']['pool_url'] = os.getenv('MINING_POOL_URL')
-        
-        if os.getenv('MINING_WORKER_NAME'):
-            config['mining']['worker_name'] = os.getenv('MINING_WORKER_NAME')
-        
         # CEA設定
         if os.getenv('CEA_PATH'):
             config['cea']['cea_path'] = os.getenv('CEA_PATH')
@@ -90,13 +79,6 @@ class ConfigManager:
             'game_name': 'Crypto Adventure RPG',
             'version': '2.0.0',
             'output_dir': 'data',
-            'mining': {
-                'enabled': True,
-                'pool_url': 'pool.supportxmr.com:3333',
-                'wallet_address': 'YOUR_WALLET_ADDRESS_HERE',
-                'worker_name': 'crypto_adventure_worker',
-                'use_simulator': True
-            },
             'power_plant': {
                 'enabled': True,
                 'monitoring_interval': 3600
@@ -173,8 +155,6 @@ class ConfigManager:
     def get_sensitive_config(self) -> Dict:
         """機密設定を取得（環境変数から）"""
         return {
-            'mining_wallet': os.getenv('MINING_WALLET_ADDRESS', 'NOT_SET'),
-            'mining_pool': os.getenv('MINING_POOL_URL', 'NOT_SET'),
             'cea_path': os.getenv('CEA_PATH', 'NOT_SET'),
             'bgm_volume': os.getenv('BGM_VOLUME', '0.5'),
             'effect_volume': os.getenv('EFFECT_VOLUME', '0.7')
@@ -183,9 +163,6 @@ class ConfigManager:
     def validate_config(self, config: Dict) -> bool:
         """設定の妥当性をチェック"""
         required_fields = [
-            'mining.wallet_address',
-            'mining.pool_url',
-            'mining.worker_name'
         ]
         
         for field in required_fields:

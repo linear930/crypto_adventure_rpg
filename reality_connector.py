@@ -35,11 +35,6 @@ class RealityConnector:
         
         # 監視対象プロセス
         self.monitored_processes = {
-            'xmrig': {
-                'keywords': ['xmrig', 'xmr-stak', 'monero'],
-                'log_patterns': ['hashrate', 'accepted', 'rejected'],
-                'type': 'mining'
-            },
             'cea': {
                 'keywords': ['cea', 'rocket', 'propulsion'],
                 'log_patterns': ['isp', 'thrust', 'chamber'],
@@ -80,12 +75,6 @@ class RealityConnector:
                 'enabled': True,
                 'interval': 30,  # 秒
                 'auto_sync': True
-            },
-            'mining': {
-                'xmrig_path': '',
-                'log_file': '',
-                'wallet_address': '',
-                'pool_url': ''
             },
             'cea': {
                 'cea_path': '',
@@ -237,40 +226,6 @@ class RealityConnector:
         except Exception as e:
             self.logger.error(f"電力消費監視エラー: {e}")
     
-    def get_mining_data(self) -> Optional[Dict]:
-        """マイニングデータの取得"""
-        mining_activities = [a for a in self.activity_log if a['type'] == 'xmrig']
-        
-        if not mining_activities:
-            return None
-        
-        # 最新のマイニング活動からデータを抽出
-        latest_activity = mining_activities[-1]
-        
-        # 実際のマイニングログファイルからデータを読み取り
-        mining_log = self._read_mining_log()
-        
-        return {
-            'hash_rate': mining_log.get('hash_rate', 0),
-            'power_consumption': mining_log.get('power_consumption', 0),
-            'xmr_earned': mining_log.get('xmr_earned', 0),
-            'duration_minutes': mining_log.get('duration_minutes', 60),
-            'timestamp': latest_activity['timestamp']
-        }
-    
-    def _read_mining_log(self) -> Dict:
-        """マイニングログの読み取り"""
-        mining_log_file = self.data_dir / "mining_log.json"
-        
-        if mining_log_file.exists():
-            try:
-                with open(mining_log_file, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-            except Exception as e:
-                self.logger.error(f"マイニングログ読み取りエラー: {e}")
-        
-        return {}
-    
     def get_cea_data(self) -> Optional[Dict]:
         """CEA計算データの取得"""
         cea_activities = [a for a in self.activity_log if a['type'] == 'cea']
@@ -306,18 +261,10 @@ class RealityConnector:
     def sync_to_game(self, game_engine) -> Dict:
         """ゲームエンジンへの同期"""
         sync_results = {
-            'mining_synced': False,
             'cea_synced': False,
             'power_plant_synced': False,
             'activities_count': len(self.activity_log)
         }
-        
-        # マイニングデータの同期
-        mining_data = self.get_mining_data()
-        if mining_data:
-            game_engine.add_mining_result(mining_data)
-            sync_results['mining_synced'] = True
-            self.logger.info("マイニングデータをゲームに同期しました")
         
         # CEAデータの同期
         cea_data = self.get_cea_data()
@@ -348,7 +295,6 @@ class RealityConnector:
         return {
             'total_activities': len(self.activity_log),
             'today_activities': len(today_activities),
-            'mining_activities': len([a for a in today_activities if a['type'] == 'xmrig']),
             'cea_activities': len([a for a in today_activities if a['type'] == 'cea']),
             'file_changes': len([a for a in today_activities if a['type'] == 'file_change']),
             'last_activity': self.activity_log[-1]['timestamp'] if self.activity_log else None

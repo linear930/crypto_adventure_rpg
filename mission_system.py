@@ -50,7 +50,6 @@ class MissionSystem:
             "completed_missions": [],
             "unlocked_titles": [],
             "action_counts": {
-                "mining": 0,
                 "cea": 0,
                 "power_plant": 0,
                 "astronomy": 0,
@@ -61,7 +60,6 @@ class MissionSystem:
             },
             "daily_actions": {
                 "date": datetime.now().strftime("%Y-%m-%d"),
-                "mining": 0,
                 "cea": 0,
                 "power_plant": 0,
                 "astronomy": 0,
@@ -76,7 +74,6 @@ class MissionSystem:
             },
             "daily_metrics": {
                 "power_usage_W": 0,
-                "mined_amount_XMR": 0,
                 "expected_output_kwh_per_day": 0
             }
         }
@@ -124,7 +121,6 @@ class MissionSystem:
         if self.progress["daily_actions"]["date"] != current_date:
             self.progress["daily_actions"] = {
                 "date": current_date,
-                "mining": 0,
                 "cea": 0,
                 "power_plant": 0,
                 "astronomy": 0,
@@ -137,7 +133,6 @@ class MissionSystem:
             # 日次メトリクスもリセット
             self.progress["daily_metrics"] = {
                 "power_usage_W": 0,
-                "mined_amount_XMR": 0,
                 "expected_output_kwh_per_day": 0
             }
         
@@ -178,11 +173,6 @@ class MissionSystem:
         """日次メトリクスを更新"""
         metrics = self.progress["daily_metrics"]
         
-        # マイニング関連
-        if "power_usage_W" in action_data:
-            metrics["power_usage_W"] += action_data["power_usage_W"]
-        if "mined_amount_XMR" in action_data:
-            metrics["mined_amount_XMR"] += action_data["mined_amount_XMR"]
         
         # 発電所関連
         if "expected_output_kwh_per_day" in action_data:
@@ -511,16 +501,15 @@ def main():
     # テストアクション
     test_action_data = {
         "power_usage_W": 15,
-        "mined_amount_XMR": 0.00002,
         "expected_output_kwh_per_day": 2.5
     }
     
     # アクションをログに記録
-    mission_system.log_action("mining", test_action_data)
+    mission_system.log_action("power_plant", test_action_data)
     
     # ミッションをチェック
-    completed = mission_system.check_missions("mining", test_action_data)
-    unlocked = mission_system.check_titles("mining", test_action_data)
+    completed = mission_system.check_missions("power_plant", test_action_data)
+    unlocked = mission_system.check_titles("power_plant", test_action_data)
     
     print(f"✅ 完了したミッション: {len(completed)}")
     print(f"🏆 獲得した称号: {len(unlocked)}")

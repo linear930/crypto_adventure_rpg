@@ -12,7 +12,6 @@ class ConditionParser:
         # アクション名のマッピング
         self.action_mapping = {
             'design_plant': 'power_plant',
-            'mine_log': 'mining',
             'cea_run': 'cea',
             'observe_optics': 'astronomy',
             'build_module': 'build',
@@ -449,13 +448,8 @@ def main():
     # テスト条件
     test_conditions = [
         "`design_plant` の `expected_output_kwh_per_day` ≥ 1.0",
-        "`mine_log` 実行回数 ≥ 3",
         "累計 `cea_run` 実行回数 ≥ 10",
-        "1日内の `mine_log` 回数 ≥ 1 かつ `power_usage_W` ≤ 0",
-        "3日連続で `advance_day` を実行",
-        "`mine_log` と `design_plant` を同日に両方実行 ≥ 1",
-        "累計 `mined_amount_XMR` ≥ 0.01",
-        "`mine_log` の `power_usage_W` / `hashrate_khps` ≤ 0.1"
+        "3日連続で `advance_day` を実行"
     ]
     
     print("🧪 条件パーサーテスト")

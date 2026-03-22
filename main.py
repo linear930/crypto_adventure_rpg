@@ -12,12 +12,18 @@ import os
 from pathlib import Path
 from typing import Dict, List, Optional
 from datetime import datetime, timedelta
+# 実行場所をスクリプト/実行ファイルのディレクトリに固定
+# （exe配布時に相対パスのdata/assetsが正しく参照されるようにする）
+import sys
+if getattr(sys, "frozen", False):
+    os.chdir(Path(sys.executable).resolve().parent)
+else:
+    os.chdir(Path(__file__).resolve().parent)
 
 from game_engine import GameEngine
 from actions.cea import CEALearningSystem
 from actions.power_plant import PowerGenerationLearningSystem
 from actions.optics import AstronomicalObservationSystem
-from actions.mine import MoneroMiningLearningSystem
 from actions.power_plant import PowerMissionSystem
 from config_manager import ConfigManager
 
@@ -41,7 +47,6 @@ class CryptoAdventureRPG:
         (self.data_dir / "cea_calculation").mkdir(exist_ok=True)
         (self.data_dir / "power_generation").mkdir(exist_ok=True)
         (self.data_dir / "optics_observations").mkdir(exist_ok=True)
-        (self.data_dir / "mining_activities").mkdir(exist_ok=True)
         (self.data_dir / "activity_logs").mkdir(exist_ok=True)
         
         # 必要な履歴ファイルを初期化
@@ -53,14 +58,12 @@ class CryptoAdventureRPG:
         self.cea_system = CEALearningSystem(self.config)
         self.power_system = PowerGenerationLearningSystem(self.config)
         self.optics_system = AstronomicalObservationSystem(self.config)
-        self.miner = MoneroMiningLearningSystem(self.config)
         self.power_missions = PowerMissionSystem(self.config)
         
         # 各システムにGameEngineの参照を設定
         self.cea_system.set_game_engine(self.game_engine)
         self.power_system.set_game_engine(self.game_engine)
         self.optics_system.set_game_engine(self.game_engine)
-        self.miner.set_game_engine(self.game_engine)
         
         # ゲーム状態
         self.current_day = 1
@@ -73,8 +76,7 @@ class CryptoAdventureRPG:
         self.daily_rewards = {
             'cea_calculation': 0,
             'power_generation': 0,
-            'optics_observation': 0,
-            'mining_session': 0
+            'optics_observation': 0
         }
         self.consecutive_days_bonus = 0
         
@@ -96,14 +98,7 @@ class CryptoAdventureRPG:
         optics_file = self.data_dir / "optics_observations" / "optics_observations.json"
         if not optics_file.exists():
             with open(optics_file, 'w', encoding='utf-8') as f:
-                json.dump({"observations": []}, f, ensure_ascii=False, indent=2)
-        
-        # マイニング履歴ファイル
-        mining_file = self.data_dir / "mining_activities" / "mining_sessions.json"
-        if not mining_file.exists():
-            with open(mining_file, 'w', encoding='utf-8') as f:
-                json.dump({"sessions": []}, f, ensure_ascii=False, indent=2)
-        
+                json.dump({"observations": []}, f, ensure_ascii=False, indent=2)        
     def _load_config(self) -> Dict:
         """設定ファイルを読み込み（非推奨 - ConfigManagerを使用）"""
         return self.config_manager.load_config()
@@ -216,18 +211,17 @@ class CryptoAdventureRPG:
             print("   1. 🚀 CEA計算記録・学習")
             print("   2. ⚡ 発電方法記録・学習")
             print("   3. 🔭 天体観測記録・学習")
-            print("   4. ⛏️  Moneroマイニング")
-            print("   5. 🏭 発電所ミッション")
-            print("   6. 📊 統計・履歴表示")
-            print("   7. 🎯 学習目標確認")
-            print("   8. 🎵 BGM変更")
-            print("   9. 💾 ゲーム保存")
-            print("   10. 📂 セーブデータ読み込み")
-            print("   11. 📅 次の日へ進む")
-            print("   12. ❌ 終了")
+            print("   4. 🏭 発電所ミッション")
+            print("   5. 📊 統計・履歴表示")
+            print("   6. 🎯 学習目標確認")
+            print("   7. 🎵 BGM変更")
+            print("   8. 💾 ゲーム保存")
+            print("   9. 📂 セーブデータ読み込み")
+            print("   10. 📅 次の日へ進む")
+            print("   11. ❌ 終了")
             
             try:
-                choice = input(f"\n選択してください (1-12): ").strip()
+                choice = input(f"\n選択してください (1-11): ").strip()
                 
                 # デバッグコマンドチェック
                 if choice.lower() in ['debug', 'd', 'デバッグ']:
@@ -244,31 +238,28 @@ class CryptoAdventureRPG:
                     self._optics_menu()
                     input("\n🔙 メインメニューに戻るにはEnterを押してください...")
                 elif choice == "4":
-                    self._mining_menu()
-                    input("\n🔙 メインメニューに戻るにはEnterを押してください...")
-                elif choice == "5":
                     self._power_missions_menu()
                     input("\n🔙 メインメニューに戻るにはEnterを押してください...")
-                elif choice == "6":
+                elif choice == "5":
                     self._statistics_menu()
                     input("\n🔙 メインメニューに戻るにはEnterを押してください...")
-                elif choice == "7":
+                elif choice == "6":
                     self._learning_goals_menu()
                     input("\n🔙 メインメニューに戻るにはEnterを押してください...")
-                elif choice == "8":
+                elif choice == "7":
                     self._bgm_menu()
                     input("\n🔙 メインメニューに戻るにはEnterを押してください...")
-                elif choice == "9":
+                elif choice == "8":
                     self._save_game_state()
                     print("✅ ゲームを保存しました")
                     input("\n🔙 メインメニューに戻るにはEnterを押してください...")
-                elif choice == "10":
+                elif choice == "9":
                     self._load_game_menu()
                     input("\n🔙 メインメニューに戻るにはEnterを押してください...")
-                elif choice == "11":
+                elif choice == "10":
                     self._advance_to_next_day()
                     input("\n🔙 メインメニューに戻るにはEnterを押してください...")
-                elif choice == "12":
+                elif choice == "11":
                     print("👋 ゲームを終了します。お疲れ様でした！")
                     break
                 else:
@@ -342,7 +333,6 @@ class CryptoAdventureRPG:
         cea_count = self._count_activities_by_date('cea_calculations', today_str)
         power_count = self._count_activities_by_date('plant_designs', today_str)
         optics_count = self._count_activities_by_date('optics_observations', today_str)
-        mining_count = self._count_activities_by_date('mining_history', today_str)
         
         if cea_count > 0:
             activities.append(f"🚀 CEA計算: {cea_count}回")
@@ -350,8 +340,6 @@ class CryptoAdventureRPG:
             activities.append(f"⚡ 発電記録: {power_count}回")
         if optics_count > 0:
             activities.append(f"🔭 天体観測: {optics_count}回")
-        if mining_count > 0:
-            activities.append(f"⛏️ マイニング: {mining_count}セッション")
         
         return activities
     
@@ -616,139 +604,7 @@ class CryptoAdventureRPG:
         except Exception as e:
             print(f"❌ エラーが発生しました: {e}")
     
-    def _mining_menu(self):
-        """マイニングメニュー"""
-        print(f"\n⛏️  Moneroマイニングシステム")
-        print("="*40)
-        print("1. ⛏️  マイニング開始")
-        print("2. ⚙️  マイニング設定")
-        print("3. ▶️  マイニング開始")
-        print("4. ⏹️  マイニング停止")
-        print("5. 📊 マイニング状況")
-        print("6. 🎯 学習目標確認")
-        print("7. 📚 マイニング履歴")
-        print("8. 📈 マイニング統計")
-        print("9. 📖 マイニングガイド")
-        print("10. 🔍 システム互換性チェック")
-        print("11. 📦 マイニングソフトインストール")
-        print("12. 🔙 戻る")
-        
-        try:
-            choice = input("選択してください (1-12): ").strip()
-            
-            if choice == "1":
-                result = self.miner.start_mining_session()
-                if result:
-                    # 報酬を計算
-                    reward = self._get_activity_reward("mining_session", result)
-                    
-                    # 活動をテキストファイルに記録
-                    log_details = result.copy()
-                    log_details.update(reward)
-                    self._record_activity("mining_session", log_details)
-                    
-                    # 履歴をGameEngineに保存
-                    self.game_engine.add_mining_result(result)
-                    
-                    # 報酬を付与
-                    self.game_engine.add_experience(reward['total_experience'])
-                    self.game_engine.add_crypto(reward['crypto_earned'])
-                    
-                    # 報酬表示
-                    print(f"\n🎁 報酬獲得!")
-                    print(f"   💎 基本報酬: +{reward['base_reward']} 経験値")
-                    if reward['bonus_reward'] > 0:
-                        print(f"   ⭐ 追加報酬: +{reward['bonus_reward']} 経験値")
-                    if reward['consecutive_bonus'] > 0:
-                        print(f"   🔥 連続活動ボーナス: +{reward['consecutive_bonus']} 経験値")
-                    print(f"   💰 Crypto: +{reward['crypto_earned']:.6f} XMR")
-                    print(f"   📊 総獲得経験値: {reward['total_experience']}")
-                    
-                    # 学習目標の完了チェック
-                    completed_goals = self.miner.check_goal_completion()
-                    for goal in completed_goals:
-                        self.game_engine.add_experience(goal['reward']['experience'])
-                        self.game_engine.add_crypto(goal['reward']['crypto'])
-                        print(f"🎉 学習目標達成: {goal['name']}!")
-                        print(f"   💎 経験値 +{goal['reward']['experience']}")
-                        print(f"   💰 Crypto +{goal['reward']['crypto']:.6f} XMR")
-                        print()  # 改行を追加
-                        
-            elif choice == "2":
-                # デバッグ除外: 設定は行動回数を消費しない
-                config = self.miner.configure_mining()
-                if config:
-                    print("✅ マイニング設定を保存しました")
-                    
-            elif choice == "3":
-                # デバッグ除外: マイニング開始は行動回数を消費しない
-                if self.miner.start_mining():
-                    print("✅ マイニングを開始しました")
-                    print("💡 マイニングを停止するには、メニューから「マイニング停止」を選択してください")
-                    
-            elif choice == "4":
-                # デバッグ除外: マイニング停止は行動回数を消費しない
-                if self.miner.stop_mining():
-                    print("✅ マイニングを停止しました")
-                    
-            elif choice == "5":
-                # デバッグ除外: 状況確認は行動回数を消費しない
-                self.miner.show_mining_status()
-                
-            elif choice == "6":
-                # デバッグ除外: 学習目標確認は行動回数を消費しない
-                self.miner.show_learning_goals()
-                
-            elif choice == "7":
-                # デバッグ除外: 履歴表示は行動回数を消費しない
-                self.miner.show_mining_history()
-                
-            elif choice == "8":
-                # デバッグ除外: 統計表示は行動回数を消費しない
-                stats = self.miner.get_mining_statistics()
-                if stats['status'] == 'success':
-                    print(f"\n📊 マイニング統計:")
-                    print(f"   総セッション数: {stats['total_sessions']}")
-                    print(f"   総シェア数: {stats['total_shares']}")
-                    print(f"   平均ハッシュレート: {stats['avg_hashrate']:.0f} H/s")
-                    print(f"   平均効率: {stats['avg_efficiency']:.2f} H/s/W")
-                    print(f"   使用プール数: {stats['unique_pools']}")
-                    print(f"   使用ハードウェア数: {stats['unique_hardware']}")
-                else:
-                    print("📝 マイニングデータがありません")
-                    
-            elif choice == "9":
-                # デバッグ除外: ガイド表示は行動回数を消費しない
-                self.miner.show_mining_guide()
-                
-            elif choice == "10":
-                # デバッグ除外: 互換性チェックは行動回数を消費しない
-                compatibility = self.miner.check_system_compatibility()
-                print(f"\n🔍 システム互換性チェック:")
-                print(f"   OS: {compatibility['os']}")
-                print(f"   CPU: {compatibility['cpu_cores']}コア")
-                print(f"   RAM: {compatibility['ram_gb']:.1f} GB")
-                
-                if compatibility['available_miners']:
-                    print(f"   ✅ 利用可能なマイニングソフト: {', '.join(compatibility['available_miners'])}")
-                else:
-                    print(f"   ❌ 利用可能なマイニングソフト: なし")
-                    print(f"   📦 インストールが必要です")
-                
-                print(f"   🎯 マイニングサポート: {'✅ 可能' if compatibility['mining_supported'] else '❌ 不可能'}")
-                
-            elif choice == "11":
-                # デバッグ除外: インストールガイドは行動回数を消費しない
-                self.miner.install_cpuminer_guide()
-                
-            elif choice == "12":
-                return
-            else:
-                print("❌ 無効な選択です")
-                
-        except Exception as e:
-            print(f"❌ エラーが発生しました: {e}")
-    
+
     def _power_missions_menu(self):
         """発電所ミッションメニュー"""
         print(f"\n🏭 発電所ミッションシステム")
@@ -786,11 +642,10 @@ class CryptoAdventureRPG:
         print("2. 🚀 CEA統計")
         print("3. ⚡ 発電統計")
         print("4. 🔭 観測統計")
-        print("5. ⛏️  マイニング統計")
-        print("6. 🔙 戻る")
+        print("5. 🔙 戻る")
         
         try:
-            choice = input("選択してください (1-6): ").strip()
+            choice = input("選択してください (1-5): ").strip()
             
             if choice == "1":
                 # デバッグ除外: ゲーム統計は行動回数を消費しない
@@ -837,9 +692,6 @@ class CryptoAdventureRPG:
                 else:
                     print("📝 観測データがありません")
             elif choice == "5":
-                # デバッグ除外: マイニング統計は行動回数を消費しない
-                self.miner.show_mining_stats()
-            elif choice == "6":
                 return
             else:
                 print("❌ 無効な選択です")
