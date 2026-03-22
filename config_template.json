@@ -10,6 +10,10 @@
     "interval": 30,
     "auto_sync": true
   },
+  "world_observation": {
+    "enabled": true,
+    "news_api_key": ""
+  },
   "cea": {
     "cea_path": "C:\\CEA\\cea.exe",
     "input_files": [],

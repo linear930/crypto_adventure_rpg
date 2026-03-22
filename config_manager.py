@@ -58,6 +58,12 @@ class ConfigManager:
             except ValueError:
                 pass
         
+        # 世界観測設定
+        if os.getenv('NEWS_API_KEY'):
+            if 'world_observation' not in config:
+                config['world_observation'] = {}
+            config['world_observation']['news_api_key'] = os.getenv('NEWS_API_KEY')
+        
         # 音声設定
         if os.getenv('BGM_VOLUME'):
             try:
@@ -87,6 +93,10 @@ class ConfigManager:
                 'enabled': True,
                 'interval': 30,
                 'auto_sync': True
+            },
+            'world_observation': {
+                'enabled': True,
+                'news_api_key': ''
             },
             'cea': {
                 'cea_path': 'C:\\CEA\\cea.exe',

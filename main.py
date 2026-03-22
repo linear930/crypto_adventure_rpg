@@ -25,6 +25,7 @@ from actions.cea import CEALearningSystem
 from actions.power_plant import PowerGenerationLearningSystem
 from actions.optics import AstronomicalObservationSystem
 from actions.power_plant import PowerMissionSystem
+from actions.world_observer import WorldObserverSystem
 from config_manager import ConfigManager
 
 class CryptoAdventureRPG:
@@ -59,11 +60,14 @@ class CryptoAdventureRPG:
         self.power_system = PowerGenerationLearningSystem(self.config)
         self.optics_system = AstronomicalObservationSystem(self.config)
         self.power_missions = PowerMissionSystem(self.config)
+        self.world_observer = WorldObserverSystem(self.config)
         
         # 各システムにGameEngineの参照を設定
         self.cea_system.set_game_engine(self.game_engine)
         self.power_system.set_game_engine(self.game_engine)
         self.optics_system.set_game_engine(self.game_engine)
+        self.world_observer.set_game_engine(self.game_engine)
+        self.power_missions.set_game_engine(self.game_engine)
         
         # ゲーム状態
         self.current_day = 1
@@ -211,17 +215,18 @@ class CryptoAdventureRPG:
             print("   1. 🚀 CEA計算記録・学習")
             print("   2. ⚡ 発電方法記録・学習")
             print("   3. 🔭 天体観測記録・学習")
-            print("   4. 🏭 発電所ミッション")
-            print("   5. 📊 統計・履歴表示")
-            print("   6. 🎯 学習目標確認")
-            print("   7. 🎵 BGM変更")
-            print("   8. 💾 ゲーム保存")
-            print("   9. 📂 セーブデータ読み込み")
-            print("   10. 📅 次の日へ進む")
-            print("   11. ❌ 終了")
+            print("   4. 🌍 世界観測（News Sensors）")
+            print("   5. 🏭 発電所ミッション")
+            print("   6. 📊 統計・履歴表示")
+            print("   7. 🎯 学習目標確認")
+            print("   8. 🎵 BGM変更")
+            print("   9. 💾 ゲーム保存")
+            print("   10. 📂 セーブデータ読み込み")
+            print("   11. 📅 次の日へ進む")
+            print("   12. ❌ 終了")
             
             try:
-                choice = input(f"\n選択してください (1-11): ").strip()
+                choice = input(f"\n選択してください (1-12): ").strip()
                 
                 # デバッグコマンドチェック
                 if choice.lower() in ['debug', 'd', 'デバッグ']:
@@ -238,28 +243,31 @@ class CryptoAdventureRPG:
                     self._optics_menu()
                     input("\n🔙 メインメニューに戻るにはEnterを押してください...")
                 elif choice == "4":
-                    self._power_missions_menu()
+                    self._world_observation_menu()
                     input("\n🔙 メインメニューに戻るにはEnterを押してください...")
                 elif choice == "5":
-                    self._statistics_menu()
+                    self._power_missions_menu()
                     input("\n🔙 メインメニューに戻るにはEnterを押してください...")
                 elif choice == "6":
-                    self._learning_goals_menu()
+                    self._statistics_menu()
                     input("\n🔙 メインメニューに戻るにはEnterを押してください...")
                 elif choice == "7":
-                    self._bgm_menu()
+                    self._learning_goals_menu()
                     input("\n🔙 メインメニューに戻るにはEnterを押してください...")
                 elif choice == "8":
+                    self._bgm_menu()
+                    input("\n🔙 メインメニューに戻るにはEnterを押してください...")
+                elif choice == "9":
                     self._save_game_state()
                     print("✅ ゲームを保存しました")
                     input("\n🔙 メインメニューに戻るにはEnterを押してください...")
-                elif choice == "9":
+                elif choice == "10":
                     self._load_game_menu()
                     input("\n🔙 メインメニューに戻るにはEnterを押してください...")
-                elif choice == "10":
+                elif choice == "11":
                     self._advance_to_next_day()
                     input("\n🔙 メインメニューに戻るにはEnterを押してください...")
-                elif choice == "11":
+                elif choice == "12":
                     print("👋 ゲームを終了します。お疲れ様でした！")
                     break
                 else:
@@ -605,6 +613,28 @@ class CryptoAdventureRPG:
             print(f"❌ エラーが発生しました: {e}")
     
 
+    def _world_observation_menu(self):
+        """世界観測メニュー"""
+        print(f"\n🌍 世界線観測・エネルギー追跡システム")
+        print("="*40)
+        print("1. 📡 現在の世界状態を観測・記録する")
+        print("2. 📊 観測履歴・レポートを表示する")
+        print("3. 🔙 戻る")
+        
+        try:
+            choice = input("選択してください (1-3): ").strip()
+            
+            if choice == "1":
+                self.world_observer.observe_and_record()
+            elif choice == "2":
+                self.world_observer.display_world_state()
+            elif choice == "3":
+                return
+            else:
+                print("❌ 無効な選択です")
+        except Exception as e:
+            print(f"❌ エラーが発生しました: {e}")
+            
     def _power_missions_menu(self):
         """発電所ミッションメニュー"""
         print(f"\n🏭 発電所ミッションシステム")

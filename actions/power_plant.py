@@ -1038,6 +1038,11 @@ class PowerMissionSystem:
         # 現在のタブ
         self.current_tab = 'daily'
         
+        self.game_engine = None
+        
+    def set_game_engine(self, engine):
+        self.game_engine = engine
+        
     def _initialize_missions(self) -> Dict:
         """ミッションの初期化"""
         return {
@@ -1273,12 +1278,30 @@ class PowerMissionSystem:
                 mission['status'] = 'completed'
                 mission['completion_time'] = datetime.now().isoformat()
                 
+                # 世界エネルギーによる報酬ボーナス
+                multiplier = 1.0
+                if self.game_engine:
+                    world_energy = self.game_engine.state.get('world_energy', 100)
+                    if world_energy > 500:
+                        multiplier = 1.5
+                    elif world_energy > 200:
+                        multiplier = 1.2
+                        
+                final_exp = int(mission['reward']['experience'] * multiplier)
+                final_crypto = mission['reward']['crypto'] * multiplier
+                
                 # 完了済みリストに移動
                 self.missions['completed'].append(mission)
                 
                 print(f"🎉 ミッション完了: {mission['name']}!")
-                print(f"   💎 経験値 +{mission['reward']['experience']}")
-                print(f"   💰 Crypto +{mission['reward']['crypto']:.6f} XMR")
+                if multiplier > 1.0:
+                    print(f"   🌪️ 世界が騒がしいため、報酬が {multiplier}倍 になりました！")
+                print(f"   💎 経験値 +{final_exp}")
+                print(f"   💰 Crypto +{final_crypto:.6f} XMR")
+                
+                if self.game_engine:
+                    self.game_engine.add_experience(final_exp)
+                    # self.game_engine.add_crypto(final_crypto) # If wallet handles it
             else:
                 print(f"✅ 進捗を更新しました: {mission['current']}/{mission['target']} {mission['unit']}")
                 
