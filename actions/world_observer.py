@@ -310,6 +310,9 @@ class WorldObserverSystem:
         print(f"   ※ 注: 1つのトピックに情報が偏るほどエントロピーは低く(わかりやすく)なり、分散しているほど高くなります。")
         print("========================================")
         
+        memo = input("\n📝 メモ・研究ノート (空白でスキップ): ").strip()
+        self._save_simulation_record("情報理論解析", {"entropy": entropy, "complexity": complexity_ratio}, memo)
+        
         if self.game_engine and self.game_engine.use_action():
             self.game_engine.add_experience(15)
             print(f"\n🎁 【情報理論解析】により経験値を獲得しました: +15 EXP")
@@ -368,6 +371,32 @@ class WorldObserverSystem:
         print(f"   => 情報が爆発的に広まった後、徐々に忘れ去られていく歴史的ダイナミクスが観測されました。")
         print("========================================")
         
+        memo = input("\n📝 メモ・研究ノート (空白でスキップ): ").strip()
+        self._save_simulation_record("動的歴史シミュレーション", {"total_pop": total_pop, "beta": beta, "gamma": gamma}, memo)
+        
         if self.game_engine and self.game_engine.use_action():
             self.game_engine.add_experience(25)
             print(f"\n🎁 【動的歴史シミュレーション】により経験値を獲得しました: +25 EXP")
+
+    def _save_simulation_record(self, sim_type, params, memo):
+        """ シミュレーション結果を保存 """
+        import time as _time
+        from datetime import datetime as _dt
+        record = {
+            "timestamp": _dt.now().isoformat(),
+            "type": sim_type,
+            "params": params,
+            "memo": memo
+        }
+        record_file = self.history_file.parent / f"sim_{int(_time.time())}.json"
+        try:
+            import json as _json
+            with open(record_file, 'w', encoding='utf-8') as f:
+                _json.dump(record, f, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
+        if self.game_engine:
+            if 'world_simulations' not in self.game_engine.wallet:
+                self.game_engine.wallet['world_simulations'] = []
+            self.game_engine.wallet['world_simulations'].append(record)
+            self.game_engine.save_wallet()

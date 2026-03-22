@@ -1303,6 +1303,8 @@ class AstronomicalObservationSystem:
         print(f"   => 肉眼で見える最も暗い星: 約 {limiting_mag:.1f} 等級")
         print("========================================")
         
+        memo = input("\n📝 メモ・研究ノート (空白でスキップ): ").strip()
+        self._save_simulation_record("理論光学計算", {"theta_arcsec": theta_arcsec, "light_gathering": light_gathering_power, "limiting_mag": limiting_mag}, memo)
         self._grant_rewards(15, "理論光学計算")
 
     def _simulate_dynamic_snr(self):
@@ -1362,6 +1364,8 @@ class AstronomicalObservationSystem:
         print(f"   => 時間の平方根に比例して画質が向上する様子が観測されました。")
         print("========================================")
         
+        memo = input("\n📝 メモ・研究ノート (空白でスキップ): ").strip()
+        self._save_simulation_record("動的S/Nシミュレーション", {"S_rate": S_rate, "QE": QE, "max_time_min": max_time_min}, memo)
         self._grant_rewards(25, "動的S/Nシミュレーション")
 
     def _simulate_kepler(self):
@@ -1381,7 +1385,33 @@ class AstronomicalObservationSystem:
         print(f"   => 惑星の公転周期: {T_years:.3f} 年")
         print("========================================")
         
+        memo = input("\n📝 メモ・研究ノート (空白でスキップ): ").strip()
+        self._save_simulation_record("ケプラー軌道計算", {"M_sun": M_sun, "a_AU": a_AU, "T_years": T_years}, memo)
         self._grant_rewards(10, "ケプラー軌道計算")
+
+    def _save_simulation_record(self, sim_type, params, memo):
+        """ シミュレーション結果をファイルに保存 """
+        import time as _time
+        from datetime import datetime as _dt
+        record = {
+            "timestamp": _dt.now().isoformat(),
+            "type": sim_type,
+            "params": params,
+            "memo": memo
+        }
+        record_file = self.optics_dir / f"sim_{int(_time.time())}.json"
+        try:
+            import json as _json
+            with open(record_file, 'w', encoding='utf-8') as f:
+                _json.dump(record, f, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
+        # GameEngineにも保存
+        if self.game_engine:
+            if 'optics_simulations' not in self.game_engine.wallet:
+                self.game_engine.wallet['optics_simulations'] = []
+            self.game_engine.wallet['optics_simulations'].append(record)
+            self.game_engine.save_wallet()
 
     def _grant_rewards(self, exp, exp_type):
         if self.game_engine:

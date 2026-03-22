@@ -95,6 +95,9 @@ class RocketResearchSystem:
             print("🔴 軌道到達にはΔVが【不足】しています。機体軽量化か推力向上が必要です。")
             success = False
 
+        # メモ入力
+        memo = input("\n📝 メモ・研究ノート (空白でスキップ): ").strip()
+
         # 記録の保存
         record = {
             "date": datetime.now().isoformat(),
@@ -102,7 +105,8 @@ class RocketResearchSystem:
             "m0": m0, "mf": mf, "isp": isp, "target_alt": target_alt,
             "results": {
                 "delta_v": delta_v, "v_orbit": v_orbit, "dv_hohmann": dv_hohmann, "success": success
-            }
+            },
+            "memo": memo
         }
         self.history.append(record)
         self._save_history()
@@ -221,6 +225,9 @@ class RocketResearchSystem:
         else:
             print("\n🔴 宇宙空間には到達できませんでした。")
 
+        # メモ入力
+        memo = input("\n📝 メモ・研究ノート (空白でスキップ): ").strip()
+
         # 記録の保存
         record = {
             "date": datetime.now().isoformat(),
@@ -228,7 +235,8 @@ class RocketResearchSystem:
             "thrust": thrust, "isp": isp, "m_prop": m_prop,
             "results": {
                 "max_altitude_km": max_alt/1000, "max_velocity": max_v, "success": success
-            }
+            },
+            "memo": memo
         }
         self.history.append(record)
         self._save_history()

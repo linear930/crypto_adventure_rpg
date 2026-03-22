@@ -1,0 +1,16 @@
+{
+  "experiments": [
+    {
+      "date": "2026-03-22T20:41:34.391130",
+      "type": "dynamic_simulation",
+      "thrust": 432100000.0,
+      "isp": 380.0,
+      "m_prop": 39000000.0,
+      "results": {
+        "max_altitude_km": 2648.4021995163453,
+        "max_velocity": 5634.604830005421,
+        "success": true
+      }
+    }
+  ]
+}

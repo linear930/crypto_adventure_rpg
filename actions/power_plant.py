@@ -1471,6 +1471,8 @@ class PowerMissionSystem:
         print(f"   => 簡易LCOE: 約 {lcoe:.2f} 円/kWh")
         print("========================================")
         
+        memo = input("\n📝 メモ・研究ノート (空白でスキップ): ").strip()
+        self._save_simulation_record("静的エネルギー限界計算", {"carnot_eff": carnot_eff, "betz_kw": betz_limit_w/1000.0, "lcoe": lcoe}, memo)
         self._grant_rewards(20, "静的エネルギー限界計算")
 
     def _simulate_dynamic_soc(self):
@@ -1529,7 +1531,32 @@ class PowerMissionSystem:
         print(f"   => バッテリーが昼間に充電され、夜間のピーク需要を補うダイナミクスを観測しました。")
         print("========================================")
         
+        memo = input("\n📝 メモ・研究ノート (空白でスキップ): ").strip()
+        self._save_simulation_record("動的バッテリーシミュレーション", {"batt_cap": batt_cap, "solar_peak": solar_peak, "SoC_final": SoC}, memo)
         self._grant_rewards(25, "動的バッテリーシミュレーション")
+
+    def _save_simulation_record(self, sim_type, params, memo):
+        """ シミュレーション結果をファイルとセーブデータに保存 """
+        import time as _time
+        from datetime import datetime as _dt
+        record = {
+            "timestamp": _dt.now().isoformat(),
+            "type": sim_type,
+            "params": params,
+            "memo": memo
+        }
+        record_file = self.missions_dir / f"sim_{int(_time.time())}.json"
+        try:
+            import json as _json
+            with open(record_file, 'w', encoding='utf-8') as f:
+                _json.dump(record, f, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
+        if self.game_engine:
+            if 'power_simulations' not in self.game_engine.wallet:
+                self.game_engine.wallet['power_simulations'] = []
+            self.game_engine.wallet['power_simulations'].append(record)
+            self.game_engine.save_wallet()
 
     def _grant_rewards(self, exp, exp_type):
         if self.game_engine:

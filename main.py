@@ -27,6 +27,7 @@ from actions.optics import AstronomicalObservationSystem
 from actions.power_plant import PowerMissionSystem
 from actions.world_observer import WorldObserverSystem
 from actions.rocket_research import RocketResearchSystem
+from actions.journal import JournalSystem
 from config_manager import ConfigManager
 
 class CryptoAdventureRPG:
@@ -63,6 +64,7 @@ class CryptoAdventureRPG:
         self.power_missions = PowerMissionSystem(self.config)
         self.world_observer = WorldObserverSystem(self.config)
         self.rocket_system = RocketResearchSystem(self.config)
+        self.journal_system = JournalSystem(self.config)
         
         # 各システムにGameEngineの参照を設定
         self.cea_system.set_game_engine(self.game_engine)
@@ -71,6 +73,7 @@ class CryptoAdventureRPG:
         self.world_observer.set_game_engine(self.game_engine)
         self.power_missions.set_game_engine(self.game_engine)
         self.rocket_system.set_game_engine(self.game_engine)
+        self.journal_system.set_game_engine(self.game_engine)
         
         # ゲーム状態
         self.current_day = 1
@@ -221,16 +224,17 @@ class CryptoAdventureRPG:
             print("   4. 🌍 世界観測（News Sensors）")
             print("   5. 🏭 発電所ミッション")
             print("   6. 🛸 ロケット研究と軌道力学")
-            print("   7. 📊 統計・履歴表示")
-            print("   8. 🎯 学習目標確認")
-            print("   9. 🎵 BGM変更")
-            print("   10. 💾 ゲーム保存")
-            print("   11. 📂 セーブデータ読み込み")
-            print("   12. 📅 次の日へ進む")
-            print("   13. ❌ 終了")
+            print("   7. 📝 雑記記録")
+            print("   8. 📊 統計・履歴表示")
+            print("   9. 🎯 学習目標確認")
+            print("   10. 🎵 BGM変更")
+            print("   11. 💾 ゲーム保存")
+            print("   12. 📂 セーブデータ読み込み")
+            print("   13. 📅 次の日へ進む")
+            print("   14. ❌ 終了")
             
             try:
-                choice = input(f"\n選択してください (1-13): ").strip()
+                choice = input(f"\n選択してください (1-14): ").strip()
                 
                 # デバッグコマンドチェック
                 if choice.lower() in ['debug', 'd', 'デバッグ']:
@@ -255,25 +259,27 @@ class CryptoAdventureRPG:
                 elif choice == "6":
                     self.rocket_system.main_menu()
                 elif choice == "7":
+                    self.journal_system.main_menu()
+                elif choice == "8":
                     self._statistics_menu()
                     input("\n🔙 メインメニューに戻るにはEnterを押してください...")
-                elif choice == "8":
+                elif choice == "9":
                     self._learning_goals_menu()
                     input("\n🔙 メインメニューに戻るにはEnterを押してください...")
-                elif choice == "9":
+                elif choice == "10":
                     self._bgm_menu()
                     input("\n🔙 メインメニューに戻るにはEnterを押してください...")
-                elif choice == "10":
+                elif choice == "11":
                     self._save_game_state()
                     print("✅ ゲームを保存しました")
                     input("\n🔙 メインメニューに戻るにはEnterを押してください...")
-                elif choice == "11":
+                elif choice == "12":
                     self._load_game_menu()
                     input("\n🔙 メインメニューに戻るにはEnterを押してください...")
-                elif choice == "12":
+                elif choice == "13":
                     self._advance_to_next_day()
                     input("\n🔙 メインメニューに戻るにはEnterを押してください...")
-                elif choice == "13":
+                elif choice == "14":
                     print("👋 ゲームを終了します。お疲れ様でした！")
                     break
                 else:
