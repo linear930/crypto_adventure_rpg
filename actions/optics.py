@@ -1232,4 +1232,161 @@ class AstronomicalObservationSystem:
                 print(f"      📝 {info['description']}")
                 print(f"      ✅ メリット: {', '.join(info['pros'])}")
                 print(f"      ❌ デメリット: {', '.join(info['cons'])}")
-                print(f"      🎯 適している人: {info['suitable_for']}") 
+                print(f"      🎯 適している人: {info['suitable_for']}")
+
+    # ==========================================
+    # 高度なシミュレーション・理論システム
+    # ==========================================
+    def show_theoretical_simulation_menu(self):
+        """光学・天文学の理論計算およびシミュレーションメニュー"""
+        while True:
+            print("\n" + "="*40)
+            print("🔬 光学・天文学 理論シミュレーション")
+            print("="*40)
+            print("1. 望遠鏡の静的性能限界を計算 (レイリー限界・集光力など)")
+            print("2. 天体写真の動的 S/N 比シミュレーション (量子効率とノイズ)")
+            print("3. ケプラーの第3法則を用いた惑星公転の計算")
+            print("0. 戻る")
+            
+            choice = input("\n選択してください (1-3/0): ").strip()
+            
+            if choice == "1":
+                self._simulate_static_optics()
+            elif choice == "2":
+                self._simulate_dynamic_snr()
+            elif choice == "3":
+                self._simulate_kepler()
+            elif choice == "0":
+                break
+            else:
+                print("❌ 無効な選択です。")
+
+    def _simulate_static_optics(self):
+        print("\n=== 望遠鏡の静的性能限界計算 ===")
+        print("光の波動性と口径から、望遠鏡の持つ理論的な性能限界を計算します。")
+        
+        try:
+            D = float(input("🔭 望遠鏡の有効口径 [mm]: "))
+            lambda_nm = float(input("🌈 観測波長 [nm] (例: 可視光の緑は 550): ") or "550")
+            d_eye = float(input("👁️ 人間の瞳孔径 [mm] (例: 暗順応時は約 7): ") or "7")
+        except ValueError:
+            print("❌ 無効な入力です。")
+            return
+            
+        if D <= 0 or lambda_nm <= 0 or d_eye <= 0:
+            print("❌ 正の値を入れてください。")
+            return
+
+        # 1. レイリーの解像限界 (分解能) θ = 1.22 * lambda / D (ラジアン -> 角度秒)
+        # ラジアンを秒角に直すため 206265 を掛ける
+        theta_rad = 1.22 * (lambda_nm * 1e-9) / (D * 1e-3)
+        theta_arcsec = theta_rad * 206265.0
+        
+        # 2. 集光力 L = (D/d)^2
+        light_gathering_power = (D / d_eye)**2
+        
+        # 3. 限界等級 (極限等級) m = 6.8 + 5 log10(D[cm])
+        D_cm = D / 10.0
+        limiting_mag = 6.8 + 5.0 * math.log10(D_cm)
+
+        print("\n" + "="*40)
+        print("📊 静的性能シミュレーション解析結果")
+        print("="*40)
+        print(f"📌 [使用方程式]: レイリーの解像限界 (θ = 1.22 * λ / D)")
+        print(f"   => 理論分解能: {theta_arcsec:.2f} 秒角")
+        print(f"   ※ 注: 光の回折(エアリーディスク)により点光源でも広がりを持つため、これ以上細かい構造は見えません。")
+        
+        print(f"\n📌 [使用方程式]: 集光力 (L = (D / d_eye)^2)")
+        print(f"   => 人間の眼の {light_gathering_power:.1f} 倍の光を集めます")
+        
+        print(f"\n📌 [使用方程式]: 限界等級 (m = 6.8 + 5 * log10(D[cm]))")
+        print(f"   => 肉眼で見える最も暗い星: 約 {limiting_mag:.1f} 等級")
+        print("========================================")
+        
+        self._grant_rewards(15, "理論光学計算")
+
+    def _simulate_dynamic_snr(self):
+        print("\n=== 天体写真の動的 S/N比 シミュレーション ===")
+        print("光電効果(光子->電子変換)から生じるシグナルと各種ノイズを用いた、露光時間による画質の時間発展を計算します。")
+        
+        try:
+            S_rate = float(input("✨ 対象天体からの光子到達率 [光子/ピクセル/秒] (例: 5): ") or "5")
+            B_rate = float(input("🌌 背景夜空からの光子到達率 [光子/ピクセル/秒] (例: 10): ") or "10")
+            QE = float(input("📷 センサーの量子効率 (0.0〜1.0) [0.8]: ") or "0.8")
+            dark_current = float(input("🔥 暗電流ノイズ [電子/ピクセル/秒] (例: 0.1): ") or "0.1")
+            read_noise = float(input("⚡ 読み出しノイズ [電子/ピクセル] (例: 3.0): ") or "3.0")
+            max_time_min = int(input("⏱️ 最大シミュレーション時間 [分] (例: 60): ") or "60")
+        except ValueError:
+            print("❌ 無効な入力です。")
+            return
+            
+        print("\n⏳ 露光開始！ (10分ごとの S/N 比の推移を表示)")
+        print("-" * 60)
+        print(f"{'Time(m)':>8} | {'Signal(e-)':>12} | {'Noise(e-)':>12} | {'S/N Ratio':>12} | {'評価':>10}")
+        print("-" * 60)
+
+        dt = 60 # 1分 = 60秒
+        t_sec = 0
+        
+        # 光電効果に基づく実際のシグナルと背景ノイズレート
+        Signal_rate_e = S_rate * QE
+        B_rate_e = B_rate * QE
+        
+        for m in range(0, max_time_min + 1, 10):
+            if m == 0:
+                continue
+            
+            t_sec = m * 60
+            
+            # シグナル総量: N*t
+            Total_Signal = Signal_rate_e * t_sec
+            
+            # ノイズ分散の和 = ショットノイズ(シグナル+背景) + 暗電流 + リードノイズ^2
+            variance = (Signal_rate_e * t_sec) + (B_rate_e * t_sec) + (dark_current * t_sec) + (read_noise**2)
+            Total_Noise = math.sqrt(variance)
+            
+            SNR = Total_Signal / Total_Noise if Total_Noise > 0 else 0
+            
+            eval_str = "❌"
+            if SNR > 100:
+                eval_str = "🌟"
+            elif SNR > 20:
+                eval_str = "🟢"
+            elif SNR > 5:
+                eval_str = "🟡"
+                
+            print(f"{m:>8} | {Total_Signal:>12.1f} | {Total_Noise:>12.1f} | {SNR:>12.1f} | {eval_str:>10}")
+
+        print("-" * 60)
+        print(f"📌 [使用方程式]: S/N比モデル SNR = (N*·t*QE) / √(N*·t*QE + N_B·t*QE + N_D·t + N_r^2)")
+        print(f"   => 時間の平方根に比例して画質が向上する様子が観測されました。")
+        print("========================================")
+        
+        self._grant_rewards(25, "動的S/Nシミュレーション")
+
+    def _simulate_kepler(self):
+        print("\n=== ケプラーの第3法則 シミュレーション ===")
+        try:
+            M_sun = float(input("☀️ 中心星の質量 [太陽質量=1.0]: ") or "1.0")
+            a_AU = float(input("🪐 惑星の軌道長半径 [AU=地球と太陽の距離]: ") or "1.0")
+        except ValueError:
+            print("❌ 無効な入力です。")
+            return
+            
+        # ケプラーの第3法則: T^2 = a^3 / M (※単位系: T[年], a[AU], M[太陽質量])
+        T_years = math.sqrt((a_AU**3) / M_sun)
+        
+        print("\n" + "="*40)
+        print(f"📌 [使用方程式]: ケプラーの第3法則 (T^2 ∝ a^3 / M)")
+        print(f"   => 惑星の公転周期: {T_years:.3f} 年")
+        print("========================================")
+        
+        self._grant_rewards(10, "ケプラー軌道計算")
+
+    def _grant_rewards(self, exp, exp_type):
+        if self.game_engine:
+            if not self.game_engine.use_action():
+                print("⚠️ 行動回数が残っていませんが、シミュレーションは完了しました。")
+                return
+            print(f"\n🎁 【{exp_type}】により経験値を獲得しました: +{exp} EXP")
+            self.game_engine.add_experience(exp) 

@@ -1398,4 +1398,143 @@ class PowerMissionSystem:
         for mission in self.missions['weekly']:
             if mission['status'] == 'active':
                 mission['current'] = 0.0
-        print("✅ 週次ミッションをリセットしました") 
+        print("✅ 週次ミッションをリセットしました")
+
+    # ==========================================
+    # 高度なシミュレーション・理論システム
+    # ==========================================
+    def show_theoretical_simulation_menu(self):
+        """発電・エネルギー理論シミュレーション"""
+        while True:
+            print("\n" + "="*40)
+            print("🔬 発電・エネルギー 理論シミュレーション")
+            print("="*40)
+            print("1. 静的性能限界とコスト (カルノー効率・ベッツの法則・LCOE)")
+            print("2. 動的シミュレーション (バッテリーSoC充放電サイクルと電力潮流)")
+            print("0. 戻る")
+            
+            choice = input("\n選択してください (1-2/0): ").strip()
+            
+            if choice == "1":
+                self._simulate_static_power()
+            elif choice == "2":
+                self._simulate_dynamic_soc()
+            elif choice == "0":
+                break
+            else:
+                print("❌ 無効な選択です。")
+
+    def _simulate_static_power(self):
+        print("\n=== 発電の静的性能限界・コスト計算 ===")
+        print("熱力学・流体力学・経済学の基本方程式から発電システムの理論値を計算します。")
+        
+        try:
+            T_hot = float(input("🔥 熱源の温度 [℃] (火力/地熱/原子力等) (例: 500): ") or "500")
+            T_cold = float(input("❄️ 冷却時の温度 [℃] (環境温度等) (例: 25): ") or "25")
+            wind_speed = float(input("💨 風速 [m/s] (例: 10): ") or "10")
+            rotor_radius = float(input("🌀 風力タービンのローター半径 [m] (例: 40): ") or "40")
+            capital_cost = float(input("💰 初期投資コスト [万円] (例: 2000): ") or "2000")
+            annual_gen = float(input("⚡ 年間予想発電量 [kWh/年] (例: 100000): ") or "100000")
+            lifetime = float(input("⏳ 稼働想定年数 [年] (例: 20): ") or "20")
+        except ValueError:
+            print("❌ 無効な入力です。")
+            return
+            
+        # 1. カルノー効率: eta = 1 - (Tc/Th) [K]
+        Th_k = T_hot + 273.15
+        Tc_k = T_cold + 273.15
+        carnot_eff = (1.0 - (Tc_k / Th_k)) * 100.0 if Th_k > Tc_k else 0
+        
+        # 2. ベッツの法則と風力パワー: P = (16/27) * 0.5 * rho * A * v^3
+        # 空気密度 rho = 1.225 [kg/m^3]
+        A = math.pi * (rotor_radius ** 2)
+        wind_power_w = 0.5 * 1.225 * A * (wind_speed ** 3)
+        betz_limit_w = wind_power_w * (16.0 / 27.0)
+        
+        # 3. LCOE (均等化発電原価) = (初期投資 + O&M(ここでは簡略化)) / 生涯発電量
+        # 簡易計算として O&M無視、単純割り算に割引率0で近似
+        total_gen = annual_gen * lifetime
+        lcoe = (capital_cost * 10000) / total_gen if total_gen > 0 else 0
+
+        print("\n" + "="*40)
+        print("📊 静的理論値の解析結果")
+        print("="*40)
+        print(f"📌 [使用方程式]: カルノー効率 (η = 1 - Tc/Th (ケルビン))")
+        print(f"   => 熱機関の理論上最大効率: {carnot_eff:.1f} %")
+        print(f"   ※ 注: 実際の発電所では摩擦熱や熱伝導ロスでこれより低くなります。")
+        
+        print(f"\n📌 [使用方程式]: ベッツの法則 (P_max = 16/27 * 0.5 * ρ * A * v^3)")
+        print(f"   => この風速と半径での理論最大出力: {betz_limit_w/1000.0:.2f} kW")
+        print(f"   ※ 注: 風がタービンをすり抜けるため獲得できるエネルギーは最大約59.3%に制限されます。")
+        
+        print(f"\n📌 [使用方程式]: 平準化発電原価 (LCOE = 総コスト / 総発電量)")
+        print(f"   => 簡易LCOE: 約 {lcoe:.2f} 円/kWh")
+        print("========================================")
+        
+        self._grant_rewards(20, "静的エネルギー限界計算")
+
+    def _simulate_dynamic_soc(self):
+        print("\n=== バッテリーSoC・電力潮流の動的シミュレーション ===")
+        print("1日(24時間)の太陽光発電と需要の差分をバッテリーがどう吸収するか、充放電方程式を用いてシミュレートします。")
+        
+        try:
+            batt_cap = float(input("🔋 バッテリー容量 [kWh] (例: 13.5): ") or "13.5")
+            batt_eff = float(input("⚡ 充放電効率 (0.0〜1.0) [0.9]: ") or "0.9")
+            solar_peak = float(input("☀️ 太陽光ピーク出力 [kW] (例: 5.0): ") or "5.0")
+            base_load = float(input("🏠 常時消費電力 [kW] (例: 1.0): ") or "1.0")
+        except ValueError:
+            print("❌ 無効な入力です。")
+            return
+            
+        print("\n⏳ 24時間のシミュレーション開始！")
+        print("-" * 75)
+        print(f"{'Time':>6} | {'Solar(kW)':>10} | {'Demand(kW)':>10} | {'Net(kW)':>10} | {'SoC(kWh)':>8} | {'SoC(%)':>6}")
+        print("-" * 75)
+
+        # SoC (State of Charge): 現在の充電量
+        SoC = batt_cap * 0.5  # 初期は50%
+        
+        # 電力潮流方程式: P_net(t) = P_gen(t) - P_demand(t)
+        # SoC(t+dt) = SoC(t) + (P_net(t) * dt * eff (充電時)) または / eff (放電時)
+        
+        for t in range(25):
+            # 太陽光は 6時〜18時に半波形のサインカーブと仮定
+            if 6 <= t <= 18:
+                solar_p = solar_peak * math.sin(math.pi * (t - 6) / 12.0)
+            else:
+                solar_p = 0.0
+                
+            # 需要（夕方にピーク）
+            demand_p = base_load
+            if 17 <= t <= 22:
+                demand_p += 2.0  # 夕方の追加需要
+                
+            net_p = solar_p - demand_p
+            
+            # SoCの更新 (dt = 1時間)
+            old_soc = SoC
+            if net_p > 0:
+                SoC += net_p * batt_eff  # 充電ロス
+            else:
+                SoC += net_p / batt_eff  # 放電ロス (電力網から追加で抜ける)
+                
+            # SoCの制限
+            SoC = max(0.0, min(SoC, batt_cap))
+            soc_percent = (SoC / batt_cap) * 100.0
+
+            print(f"{t:>4}:00 | {solar_p:>10.2f} | {demand_p:>10.2f} | {net_p:>10.2f} | {SoC:>8.2f} | {soc_percent:>5.1f}%")
+
+        print("-" * 75)
+        print(f"📌 [使用方程式]: バッテリー充放電 SoC(t+1) = SoC(t) + η_chg * P_net+ - (1/η_dis) * P_net-")
+        print(f"   => バッテリーが昼間に充電され、夜間のピーク需要を補うダイナミクスを観測しました。")
+        print("========================================")
+        
+        self._grant_rewards(25, "動的バッテリーシミュレーション")
+
+    def _grant_rewards(self, exp, exp_type):
+        if self.game_engine:
+            if not self.game_engine.use_action():
+                print("⚠️ 行動回数が残っていませんが、シミュレーションは完了しました。")
+                return
+            print(f"\n🎁 【{exp_type}】により経験値を獲得しました: +{exp} EXP")
+            self.game_engine.add_experience(exp) 

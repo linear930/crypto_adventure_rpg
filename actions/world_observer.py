@@ -240,8 +240,134 @@ class WorldObserverSystem:
             self.game_engine.add_experience(exp_reward)
             
             # 世界のエネルギー状態をゲームエンジンに保存
-            self.game_engine.state['world_energy'] = energy_state['total_energy']
-            self.game_engine.state['world_momentum'] = energy_state['momentum']
             self.game_engine.save_state()
             
         return energy_state
+
+    # ==========================================
+    # ④ 高度なシミュレーション・理論システム
+    # ==========================================
+    def show_theoretical_simulation_menu(self):
+        """世界線・トレンド理論シミュレーション"""
+        while True:
+            print("\n" + "="*40)
+            print("🔬 世界線・歴史トレンド 理論シミュレーション")
+            print("="*40)
+            print("1. 情報・社会プラットフォームの静的解析 (シャノンエントロピー・情報量)")
+            print("2. トレンド・パンデミック伝播の動的シミュレーション (SIRモデル・歴史ダイナミクス)")
+            print("0. 戻る")
+            
+            choice = input("\n選択してください (1-2/0): ").strip()
+            
+            if choice == "1":
+                self._simulate_static_information()
+            elif choice == "2":
+                self._simulate_dynamic_trends()
+            elif choice == "0":
+                break
+            else:
+                print("❌ 無効な選択です。")
+
+    def _simulate_static_information(self):
+        import math
+        print("\n=== 情報の静的解析（シャノンエントロピー） ===")
+        print("社会を飛び交う情報やニュースの確率分布から、システム全体が持つ「不確実性(エントロピー)」を計算します。")
+        
+        try:
+            print("3つの独立したトピック（例: 戦争・AI・暗号資産）の発生確率 p1, p2, p3 を入力してください（合計1.0）")
+            p1 = float(input("📰 トピックAの確率 (例: 0.5): ") or "0.5")
+            p2 = float(input("📰 トピックBの確率 (例: 0.3): ") or "0.3")
+            p3 = float(input("📰 トピックCの確率 (例: 0.2): ") or "0.2")
+        except ValueError:
+            print("❌ 無効な入力です。")
+            return
+            
+        total_p = p1 + p2 + p3
+        if total_p <= 0.0:
+            print("❌ 確率は正の値である必要があります。")
+            return
+            
+        # 正規化
+        p1, p2, p3 = p1/total_p, p2/total_p, p3/total_p
+        
+        # シャノンエントロピー H = -Σ p_i log2(p_i)
+        entropy = 0.0
+        for p in [p1, p2, p3]:
+            if p > 0:
+                entropy -= p * math.log2(p)
+                
+        # 最大エントロピー（全て等確率の場合）
+        max_entropy = math.log2(3)
+        complexity_ratio = (entropy / max_entropy) * 100
+
+        print("\n" + "="*40)
+        print("📊 静的情報解析の結果")
+        print("="*40)
+        print(f"📌 正規化された確率分布: [A:{p1:.2f}, B:{p2:.2f}, C:{p3:.2f}]")
+        print(f"📌 [使用方程式]: シャノンエントロピー H = -Σ p_i * log2(p_i)")
+        print(f"   => 現在の世界の情報エントロピー: {entropy:.3f} bit")
+        print(f"   => 世界の複雑度 (最大値に対する割合): {complexity_ratio:.1f} %")
+        print(f"   ※ 注: 1つのトピックに情報が偏るほどエントロピーは低く(わかりやすく)なり、分散しているほど高くなります。")
+        print("========================================")
+        
+        if self.game_engine and self.game_engine.use_action():
+            self.game_engine.add_experience(15)
+            print(f"\n🎁 【情報理論解析】により経験値を獲得しました: +15 EXP")
+
+    def _simulate_dynamic_trends(self):
+        print("\n=== トレンド伝播の動的シミュレーション (SIR / 歴史モデル) ===")
+        print("疫学のSIRモデルを応用し、新しい情報・イノベーション・歴史的事件が社会にどう伝播・忘却されるかを計算します。")
+        
+        try:
+            total_pop = int(input("🌍 世界の総人口・対象規模 [万人] (例: 10000): ") or "10000")
+            beta = float(input("🗣️ 感染(伝播)率 β (例: 0.3): ") or "0.3")
+            gamma = float(input("📉 回復(忘却)率 γ (例: 0.1): ") or "0.1")
+            max_days = int(input("⏱️ シミュレーション期間 [日] (例: 60): ") or "60")
+        except ValueError:
+            print("❌ 無効な入力です。")
+            return
+            
+        # 初期状態:
+        # S (Susceptible) = 未認知の層
+        # I (Infected) = トレンドに乗っている層
+        # R (Recovered) = 飽きて忘れた/関心を失った層
+        I = 1.0 # 最初は1万人(少数)からスタート
+        R = 0.0
+        S = total_pop - I - R
+        N = float(total_pop)
+        
+        print("\n⏳ 伝播シミュレーション開始！")
+        print("-" * 65)
+        print(f"{'Day':>4} | {'未認知 (S)':>12} | {'トレンド中 (I)':>14} | {'忘却済 (R)':>12}")
+        print("-" * 65)
+
+        for day in range(0, max_days + 1, 5):
+            
+            if day > 0:
+                # 5日分時間を進める (オイラー法)
+                dt = 1.0
+                for _ in range(5):
+                    new_infections = beta * S * I / N
+                    new_recoveries = gamma * I
+                    
+                    S -= new_infections
+                    I += new_infections - new_recoveries
+                    R += new_recoveries
+
+            # Iの状態でマーク
+            trend_mark = ""
+            if I > N * 0.3:
+                trend_mark = "🔥(大流行)"
+            elif I > N * 0.1:
+                trend_mark = "📈(流行中)"
+                
+            print(f"{day:>4} | {S:>12.1f} | {I:>10.1f} {trend_mark:<3} | {R:>12.1f}")
+
+        print("-" * 65)
+        print(f"📌 [使用方程式]: SIRモデル (dS/dt = -βSI/N, dI/dt = βSI/N - γI, dR/dt = γI)")
+        print(f"   => 情報が爆発的に広まった後、徐々に忘れ去られていく歴史的ダイナミクスが観測されました。")
+        print("========================================")
+        
+        if self.game_engine and self.game_engine.use_action():
+            self.game_engine.add_experience(25)
+            print(f"\n🎁 【動的歴史シミュレーション】により経験値を獲得しました: +25 EXP")
