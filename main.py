@@ -28,6 +28,7 @@ from actions.power_plant import PowerMissionSystem
 from actions.world_observer import WorldObserverSystem
 from actions.rocket_research import RocketResearchSystem
 from actions.journal import JournalSystem
+from actions.power_connection.assistant import PowerConnectionAssistant
 from config_manager import ConfigManager
 
 class CryptoAdventureRPG:
@@ -65,6 +66,7 @@ class CryptoAdventureRPG:
         self.world_observer = WorldObserverSystem(self.config)
         self.rocket_system = RocketResearchSystem(self.config)
         self.journal_system = JournalSystem(self.config)
+        self.power_connection_system = PowerConnectionAssistant(self.config)
         
         # 各システムにGameEngineの参照を設定
         self.cea_system.set_game_engine(self.game_engine)
@@ -231,10 +233,11 @@ class CryptoAdventureRPG:
             print("   11. 💾 ゲーム保存")
             print("   12. 📂 セーブデータ読み込み")
             print("   13. 📅 次の日へ進む")
-            print("   14. ❌ 終了")
+            print("   14. 🔌 発電接続アシスタント")
+            print("   15. ❌ 終了")
             
             try:
-                choice = input(f"\n選択してください (1-14): ").strip()
+                choice = input(f"\n選択してください (1-15): ").strip()
                 
                 # デバッグコマンドチェック
                 if choice.lower() in ['debug', 'd', 'デバッグ']:
@@ -280,6 +283,8 @@ class CryptoAdventureRPG:
                     self._advance_to_next_day()
                     input("\n🔙 メインメニューに戻るにはEnterを押してください...")
                 elif choice == "14":
+                    self.power_connection_system.main_menu()
+                elif choice == "15":
                     print("👋 ゲームを終了します。お疲れ様でした！")
                     break
                 else:

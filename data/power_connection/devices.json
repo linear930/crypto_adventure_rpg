@@ -1,0 +1,22 @@
+{
+  "pc": {
+    "name": "PC",
+    "power_w": 50
+  },
+  "fridge": {
+    "name": "冷蔵庫",
+    "power_w": 300
+  },
+  "light": {
+    "name": "照明",
+    "power_w": 30
+  },
+  "miner": {
+    "name": "マイニングリグ",
+    "power_w": 1000
+  },
+  "TV": {
+    "name": "テレビ",
+    "power_w": 100
+  }
+}
