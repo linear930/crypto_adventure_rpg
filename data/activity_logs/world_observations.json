@@ -1,0 +1,94 @@
+{
+  "observations": [
+    {
+      "date": "2026-03-22T19:33:11.594657",
+      "raw_counts": {
+        "war": 681,
+        "ai": 1802,
+        "economy": 1344
+      },
+      "energy_state": {
+        "total_energy": 382.7,
+        "momentum": 24.7,
+        "trends": {
+          "war": {
+            "energy": 68.1,
+            "momentum": -1.4,
+            "state": "平坦"
+          },
+          "ai": {
+            "energy": 180.2,
+            "momentum": 20.3,
+            "state": "上昇軌道📈"
+          },
+          "economy": {
+            "energy": 134.4,
+            "momentum": 5.8,
+            "state": "平坦"
+          }
+        },
+        "date": "2026-03-22T19:33:11.592649"
+      }
+    },
+    {
+      "date": "2026-03-22T19:49:07.348360",
+      "raw_counts": {
+        "war": 1358,
+        "ai": 2293,
+        "crypto": 1151
+      },
+      "energy_state": {
+        "total_energy": 480.2,
+        "momentum": 231.9,
+        "trends": {
+          "war": {
+            "energy": 135.8,
+            "momentum": 67.7,
+            "state": "急加速🚀（軌道離脱・ブレイクスルー）"
+          },
+          "ai": {
+            "energy": 229.3,
+            "momentum": 49.1,
+            "state": "急加速🚀（軌道離脱・ブレイクスルー）"
+          },
+          "crypto": {
+            "energy": 115.1,
+            "momentum": 115.1,
+            "state": "急加速🚀（軌道離脱・ブレイクスルー）"
+          }
+        },
+        "date": "2026-03-22T19:49:07.347361"
+      }
+    },
+    {
+      "date": "2026-03-22T19:49:59.416645",
+      "raw_counts": {
+        "war": 1803,
+        "ai": 1158,
+        "crypto": 2059
+      },
+      "energy_state": {
+        "total_energy": 502.0,
+        "momentum": 21.8,
+        "trends": {
+          "war": {
+            "energy": 180.3,
+            "momentum": 44.5,
+            "state": "急加速🚀（軌道離脱・ブレイクスルー）"
+          },
+          "ai": {
+            "energy": 115.8,
+            "momentum": -113.5,
+            "state": "軌道崩壊📉（急速減衰）"
+          },
+          "crypto": {
+            "energy": 205.9,
+            "momentum": 90.8,
+            "state": "急加速🚀（軌道離脱・ブレイクスルー）"
+          }
+        },
+        "date": "2026-03-22T19:49:59.415070"
+      }
+    }
+  ]
+}

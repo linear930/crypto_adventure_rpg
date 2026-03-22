@@ -22,9 +22,9 @@ class WorldObserverSystem:
         
         # 観測対象のキーワードとカテゴリ
         self.topics = {
-            "war": ["war", "conflict", "military"],
-            "ai": ["AI", "artificial intelligence", "OpenAI"],
-            "economy": ["economy", "inflation", "market"]
+            "war": ["war", "conflict", "military", "geopolitics"],
+            "ai": ["AI", "artificial intelligence", "OpenAI", "singularity"],
+            "crypto": ["crypto", "bitcoin", "ethereum", "web3"]
         }
         
         self.energy_state = {
@@ -68,7 +68,7 @@ class WorldObserverSystem:
             counts = {
                 "war": random.randint(500, 2000),
                 "ai": random.randint(800, 3000),
-                "economy": random.randint(1000, 2500)
+                "crypto": random.randint(1000, 4000)
             }
             return counts
 
@@ -118,18 +118,18 @@ class WorldObserverSystem:
             diff = current - previous
             cat_momentum = diff / 10.0
             
-            # トレンドの判定
-            trend_state = "平坦"
+            # トレンドの判定（運動体・軌道モデル）
+            trend_state = "停滞軌道（静止状態）"
             if cat_momentum > 30:
-                trend_state = "急加速🚀"
+                trend_state = "急加速🚀（軌道離脱・ブレイクスルー）"
             elif cat_momentum > 10:
-                trend_state = "上昇軌道📈"
+                trend_state = "上昇軌道📈（安定加速）"
             elif cat_momentum < -30:
-                trend_state = "急速減衰📉"
+                trend_state = "軌道崩壊📉（急速減衰）"
             elif cat_momentum < -10:
-                trend_state = "下降軌道"
-            elif abs(cat_momentum) < 5 and cat_energy > 150:
-                trend_state = "高エネルギー振動⚡"
+                trend_state = "下降軌道（エネルギー喪失）"
+            elif abs(cat_momentum) <= 10 and cat_energy > 150:
+                trend_state = "高エネルギー振動⚡（軌道維持・乱高下）"
 
             trends[category] = {
                 "energy": round(cat_energy, 1),
@@ -163,13 +163,13 @@ class WorldObserverSystem:
         print(f"🌪️  世界運動量 (1日の変動): {momentum_sign}{self.energy_state['momentum']} P")
         print("-" * 50)
         
-        print("📊 セクター別トレンド:")
+        print("📊 セクター別 軌道状態:")
         for category, data in self.energy_state['trends'].items():
-            cat_name = {"war": "紛争・地政学", "ai": "人工知能・技術", "economy": "経済・市場"}.get(category, category)
+            cat_name = {"war": "紛争・地政学", "ai": "AI・技術特異点", "crypto": "仮想通貨・Web3"}.get(category, category)
             print(f"  [{cat_name}]")
-            print(f"   活動量: {data['energy']} E")
-            print(f"   勢い　: {momentum_sign if data['momentum'] >= 0 else ''}{data['momentum']} P")
-            print(f"   状態　: {data['state']}")
+            print(f"   現在位置 (Energy)  : {data['energy']} E")
+            print(f"   現在速度 (Momentum): {momentum_sign if data['momentum'] >= 0 else ''}{data['momentum']} P")
+            print(f"   軌道状態 (Orbit)   : {data['state']}")
             
             # 簡易グラフの描画
             bar_length = min(int(data['energy'] / 10), 30)

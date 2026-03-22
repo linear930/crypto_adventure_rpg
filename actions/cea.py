@@ -595,8 +595,8 @@ class CEALearningSystem:
             while True:
                 fuel_input = input("燃料を選択してください (list/番号/化学式/custom) [LH2]: ").strip()
                 if fuel_input.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
+                    print("❌ 記録を中断しました")
+                    return None
                 if fuel_input.lower() == "back":
                     print("🔄 最初の入力なので戻る場所がありません。記録を中断します。")
                     return None
@@ -618,8 +618,8 @@ class CEALearningSystem:
             while True:
                 oxidizer_input = input("酸化剤を選択してください (list/番号/化学式/custom) [LOX]: ").strip()
                 if oxidizer_input.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
+                    print("❌ 記録を中断しました")
+                    return None
                 if oxidizer_input.lower() == "back":
                     print("🔄 一つ前の入力に戻ります")
                     # 燃料選択に戻る
