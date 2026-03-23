@@ -2,7 +2,19 @@
 # -*- coding: utf-8 -*-
 """
 CEA計算記録・学習モジュール
-実際のCEA計算結果を記録し、学習効果を促進するシステム
+
+プレイヤーが実際に実行したCEA（Chemical Equilibrium Analysis）計算の結果を記録し、
+学習目標の達成を管理するシステムです。
+
+データ保存先:
+    data/cea_calculation/cea_calculations.json  - 全計算履歴
+    data/cea_calculation/cea_calculation_xxx.json - 個別計算ファイル
+
+新しい学習カテゴリを追加する場合:
+    1. _initialize_learning_goals() に新カテゴリキーと _make_goal() のリストを追加する
+    2. _update_learning_progress() に達成判定ロジックを追加する
+    3. _show_category_goals() に elif を追加して表示に対応する
+    4. check_goal_completion() のカテゴリリストに新キーを追加する
 """
 
 import json
@@ -11,6 +23,7 @@ import math
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from datetime import datetime
+
 
 class CEALearningSystem:
     def __init__(self, config: Dict):
@@ -36,413 +49,121 @@ class CEALearningSystem:
         self.game_engine = game_engine
         
     def _initialize_learning_goals(self) -> Dict:
-        """学習目標の初期化"""
+        """
+        学習目標を初期化して返します。
+
+        新しい目標を追加する場合:
+            - 既存のカテゴリリストに _make_goal() を追加することで対応できます。
+            - 新カテゴリの場合はインデックスに新キーを追加し、
+              _show_category_goals() と check_goal_completion() も更新してください。
+        """
         return {
             'basic_goals': [
-                {
-                    'id': 'first_cea',
-                    'name': '初めてのCEA計算',
-                    'description': '初めてCEA計算を実行した',
-                    'type': 'achievement',
-                    'target': 1,
-                    'current': 0,
-                    'reward': {'experience': 100, 'crypto': 0.001},
-                    'status': 'locked'
-                },
-                {
-                    'id': 'basic_propellants',
-                    'name': '基本推進剤マスター',
-                    'description': 'LOX/LH2、LOX/RP-1、N2O4/UDMHの計算を実行',
-                    'type': 'collection',
-                    'target': 3,
-                    'current': 0,
-                    'reward': {'experience': 200, 'crypto': 0.002},
-                    'status': 'active'
-                }
+                self._make_goal('first_cea',         '初めてのCEA計算',         '初めてCEA計算を実行した',
+                    'achievement', target=1,  experience=100, crypto=0.001, status='locked'),
+                self._make_goal('basic_propellants', '基本推進劑マスター', 'LOX/LH2、LOX/RP-1、N2O4/UDMHの計算を実行',
+                    'collection', target=3,  experience=200, crypto=0.002),
             ],
+            # ---- 推進剤カテゴリ: どんな推進剤の組み合わせを試したか ----
             'propellant_goals': [
-                {
-                    'id': 'propellant_alchemist',
-                    'name': '推進剤の錬金術師',
-                    'description': '未体験の推進剤組み合わせを1つ発見し計算',
-                    'type': 'achievement',
-                    'target': 1,
-                    'current': 0,
-                    'reward': {'experience': 150, 'crypto': 0.0015},
-                    'status': 'active'
-                },
-                {
-                    'id': 'propellant_polyhedron',
-                    'name': '推進剤の多面体',
-                    'description': '10種類以上の推進剤組み合わせを試行',
-                    'type': 'collection',
-                    'target': 10,
-                    'current': 0,
-                    'reward': {'experience': 400, 'crypto': 0.004},
-                    'status': 'active'
-                },
-                {
-                    'id': 'oxidizer_alchemy',
-                    'name': '酸化剤の錬金術',
-                    'description': '新規酸化剤を組み合わせて実験計算',
-                    'type': 'achievement',
-                    'target': 1,
-                    'current': 0,
-                    'reward': {'experience': 300, 'crypto': 0.003},
-                    'status': 'active'
-                },
-                {
-                    'id': 'fuel_symphony',
-                    'name': '燃料の交響曲',
-                    'description': '多様な燃料で燃焼特性を比較',
-                    'type': 'collection',
-                    'target': 5,
-                    'current': 0,
-                    'reward': {'experience': 280, 'crypto': 0.0028},
-                    'status': 'active'
-                },
-                {
-                    'id': 'propellant_composition_alchemy',
-                    'name': '推進剤組成の錬金術',
-                    'description': '新規組成比率で実験計算成功',
-                    'type': 'achievement',
-                    'target': 1,
-                    'current': 0,
-                    'reward': {'experience': 280, 'crypto': 0.0028},
-                    'status': 'active'
-                },
-                {
-                    'id': 'propellant_stability_evaluator',
-                    'name': '推進剤安定性評価',
-                    'description': '推進剤の安定性試験を計算で模擬',
-                    'type': 'achievement',
-                    'target': 1,
-                    'current': 0,
-                    'reward': {'experience': 320, 'crypto': 0.0032},
-                    'status': 'active'
-                },
-                {
-                    'id': 'udmh_master',
-                    'name': 'UDMHマスター',
-                    'description': 'UDMHを使用した計算を実行',
-                    'type': 'achievement',
-                    'target': 1,
-                    'current': 0,
-                    'reward': {'experience': 350, 'crypto': 0.0035},
-                    'status': 'active'
-                },
-                {
-                    'id': 'fluorine_explorer',
-                    'name': 'フッ素の探求者',
-                    'description': 'F2を使用した超高エネルギー計算を実行',
-                    'type': 'achievement',
-                    'target': 1,
-                    'current': 0,
-                    'reward': {'experience': 500, 'crypto': 0.005},
-                    'status': 'active'
-                },
-                {
-                    'id': 'high_energy_propellant_expert',
-                    'name': '高エネルギー推進剤エキスパート',
-                    'description': 'F2、ClF3、ClF5などの高エネルギー酸化剤を使用',
-                    'type': 'collection',
-                    'target': 3,
-                    'current': 0,
-                    'reward': {'experience': 600, 'crypto': 0.006},
-                    'status': 'active'
-                },
-                {
-                    'id': 'hydrazine_family_explorer',
-                    'name': 'ヒドラジン族の探求者',
-                    'description': 'UDMH、MMH、N2H4の計算を実行',
-                    'type': 'collection',
-                    'target': 3,
-                    'current': 0,
-                    'reward': {'experience': 450, 'crypto': 0.0045},
-                    'status': 'active'
-                },
-                {
-                    'id': 'hydrocarbon_master',
-                    'name': '炭化水素マスター',
-                    'description': 'C2H6からC50H102までの炭化水素燃料を試行',
-                    'type': 'collection',
-                    'target': 10,
-                    'current': 0,
-                    'reward': {'experience': 400, 'crypto': 0.004},
-                    'status': 'active'
-                },
-                {
-                    'id': 'concentrated_oxidizer_expert',
-                    'name': '高濃度酸化剤エキスパート',
-                    'description': '90%以上の高濃度酸化剤を使用',
-                    'type': 'collection',
-                    'target': 5,
-                    'current': 0,
-                    'reward': {'experience': 350, 'crypto': 0.0035},
-                    'status': 'active'
-                },
-                {
-                    'id': 'dangerous_propellant_researcher',
-                    'name': '危険推進剤研究者',
-                    'description': 'F2、ClF3、ClF5などの危険な推進剤を研究',
-                    'type': 'collection',
-                    'target': 3,
-                    'current': 0,
-                    'reward': {'experience': 700, 'crypto': 0.007},
-                    'status': 'active'
-                }
+                self._make_goal('propellant_alchemist',             '推進剤の錬金術師',           '未体験の推進剤組み合わせを1つ発見し計算',
+                    'achievement', target=1,  experience=150,  crypto=0.0015),
+                self._make_goal('propellant_polyhedron',            '推進剤の多面体',             '10種類以上の推進剤組み合わせを試行',
+                    'collection',  target=10, experience=400,  crypto=0.004),
+                self._make_goal('oxidizer_alchemy',                 '酸化剤の錬金術',             '新規酸化剤を組み合わせて実験計算',
+                    'achievement', target=1,  experience=300,  crypto=0.003),
+                self._make_goal('fuel_symphony',                    '燃料の交響曲',               '多様な燃料で燃焼特性を比較',
+                    'collection',  target=5,  experience=280,  crypto=0.0028),
+                self._make_goal('propellant_composition_alchemy',   '推進剤組成の錬金術',         '新規組成比率で実験計算成功',
+                    'achievement', target=1,  experience=280,  crypto=0.0028),
+                self._make_goal('propellant_stability_evaluator',   '推進剤安定性評価',           '推進剤の安定性試験を計算で模擬',
+                    'achievement', target=1,  experience=320,  crypto=0.0032),
+                self._make_goal('udmh_master',                      'UDMHマスター',              'UDMHを使用した計算を実行',
+                    'achievement', target=1,  experience=350,  crypto=0.0035),
+                self._make_goal('fluorine_explorer',                'フッ素の探求者',             'F2を使用した超高エネルギー計算を実行',
+                    'achievement', target=1,  experience=500,  crypto=0.005),
+                self._make_goal('high_energy_propellant_expert',    '高エネルギー推進剤エキスパート', 'F2、ClF3、ClF5などの高エネルギー酸化剤を使用',
+                    'collection',  target=3,  experience=600,  crypto=0.006),
+                self._make_goal('hydrazine_family_explorer',        'ヒドラジン族の探求者',       'UDMH、MMH、N2H4の計算を実行',
+                    'collection',  target=3,  experience=450,  crypto=0.0045),
+                self._make_goal('hydrocarbon_master',               '炭化水素マスター',           'C2H6からC50H102までの炭化水素燃料を試行',
+                    'collection',  target=10, experience=400,  crypto=0.004),
+                self._make_goal('concentrated_oxidizer_expert',     '高濃度酸化剤エキスパート',   '90%以上の高濃度酸化剤を使用',
+                    'collection',  target=5,  experience=350,  crypto=0.0035),
+                self._make_goal('dangerous_propellant_researcher',  '危険推進剤研究者',           'F2、ClF3、ClF5などの危険な推進剤を研究',
+                    'collection',  target=3,  experience=700,  crypto=0.007),
             ],
+
+            # ---- 性能カテゴリ: 比推力・排気速度・燃焼効率 ----
             'performance_goals': [
-                {
-                    'id': 'specific_impulse_heights',
-                    'name': '比推力の高みへ',
-                    'description': '比推力350秒以上の計算結果達成',
-                    'type': 'achievement',
-                    'target': 1,
-                    'current': 0,
-                    'reward': {'experience': 300, 'crypto': 0.003},
-                    'status': 'active'
-                },
-                {
-                    'id': 'high_specific_impulse_legend',
-                    'name': '高比推力伝説',
-                    'description': '400秒以上の比推力を目指せ',
-                    'type': 'achievement',
-                    'target': 1,
-                    'current': 0,
-                    'reward': {'experience': 400, 'crypto': 0.004},
-                    'status': 'active'
-                },
-                {
-                    'id': 'exhaust_velocity_traveler',
-                    'name': '排気速度の旅人',
-                    'description': '理論排気速度4000m/s超を達成',
-                    'type': 'achievement',
-                    'target': 1,
-                    'current': 0,
-                    'reward': {'experience': 320, 'crypto': 0.0032},
-                    'status': 'active'
-                },
-                {
-                    'id': 'combustion_efficiency_conductor',
-                    'name': '燃焼効率の調律者',
-                    'description': '燃焼効率95%以上の計算に成功',
-                    'type': 'achievement',
-                    'target': 1,
-                    'current': 0,
-                    'reward': {'experience': 280, 'crypto': 0.0028},
-                    'status': 'active'
-                },
-                {
-                    'id': 'energy_density_explorer',
-                    'name': 'エネルギー密度の探求',
-                    'description': '高エネルギー密度燃料の評価計算',
-                    'type': 'achievement',
-                    'target': 1,
-                    'current': 0,
-                    'reward': {'experience': 320, 'crypto': 0.0032},
-                    'status': 'active'
-                }
+                self._make_goal('specific_impulse_heights',         '比推力の高みへ',             '比推力350秒以上の計算結果達成',
+                    'achievement', target=1,  experience=300,  crypto=0.003),
+                self._make_goal('high_specific_impulse_legend',     '高比推力伝説',               '400秒以上の比推力を目指せ',
+                    'achievement', target=1,  experience=400,  crypto=0.004),
+                self._make_goal('exhaust_velocity_traveler',        '排気速度の旅人',             '理論排気速度4000m/s超を達成',
+                    'achievement', target=1,  experience=320,  crypto=0.0032),
+                self._make_goal('combustion_efficiency_conductor',  '燃焼効率の調律者',           '燃焼効率95%以上の計算に成功',
+                    'achievement', target=1,  experience=280,  crypto=0.0028),
+                self._make_goal('energy_density_explorer',         'エネルギー密度の探求',        '高エネルギー密度燃料の評価計算',
+                    'achievement', target=1,  experience=320,  crypto=0.0032),
             ],
+
+            # ---- 圧力カテゴリ: 燃焼室圧力・混合比 ----
             'pressure_goals': [
-                {
-                    'id': 'combustion_chamber_abyss',
-                    'name': '燃焼室の深淵',
-                    'description': '200bar以上の燃焼室圧力で計算成功',
-                    'type': 'achievement',
-                    'target': 1,
-                    'current': 0,
-                    'reward': {'experience': 250, 'crypto': 0.0025},
-                    'status': 'active'
-                },
-                {
-                    'id': 'combustion_pressure_master',
-                    'name': '燃焼室圧力マスター',
-                    'description': '圧力変動を考慮した複数計算成功',
-                    'type': 'collection',
-                    'target': 5,
-                    'current': 0,
-                    'reward': {'experience': 350, 'crypto': 0.0035},
-                    'status': 'active'
-                },
-                {
-                    'id': 'mixture_ratio_magician',
-                    'name': '混合比の魔術師',
-                    'description': '最適混合比を見つけて計算',
-                    'type': 'achievement',
-                    'target': 1,
-                    'current': 0,
-                    'reward': {'experience': 200, 'crypto': 0.002},
-                    'status': 'active'
-                },
-                {
-                    'id': 'mixture_ratio_variation_explorer',
-                    'name': '混合比変動の探査',
-                    'description': '連続的に混合比を変えた計算実施',
-                    'type': 'collection',
-                    'target': 10,
-                    'current': 0,
-                    'reward': {'experience': 320, 'crypto': 0.0032},
-                    'status': 'active'
-                }
+                self._make_goal('combustion_chamber_abyss',         '燃焼室の深淵',               '200bar以上の燃焼室圧力で計算成功',
+                    'achievement', target=1,  experience=250,  crypto=0.0025),
+                self._make_goal('combustion_pressure_master',       '燃焼室圧力マスター',         '圧力変動を考慮した複数計算成功',
+                    'collection',  target=5,  experience=350,  crypto=0.0035),
+                self._make_goal('mixture_ratio_magician',           '混合比の魔術師',             '最適混合比を見つけて計算',
+                    'achievement', target=1,  experience=200,  crypto=0.002),
+                self._make_goal('mixture_ratio_variation_explorer', '混合比変動の探査',           '連続的に混合比を変えた計算実施',
+                    'collection',  target=10, experience=320,  crypto=0.0032),
             ],
+
+            # ---- 温度カテゴリ: 燃焼室温度・冷却設計 ----
             'temperature_goals': [
-                {
-                    'id': 'combustion_temperature_explorer',
-                    'name': '燃焼温度の探求者',
-                    'description': '3000K以上の燃焼温度を計算で確認',
-                    'type': 'achievement',
-                    'target': 1,
-                    'current': 0,
-                    'reward': {'experience': 270, 'crypto': 0.0027},
-                    'status': 'active'
-                },
-                {
-                    'id': 'propellant_cooling_researcher',
-                    'name': '推進剤冷却技術研究',
-                    'description': '燃焼温度低減技術を理論計算',
-                    'type': 'achievement',
-                    'target': 1,
-                    'current': 0,
-                    'reward': {'experience': 270, 'crypto': 0.0027},
-                    'status': 'active'
-                },
-                {
-                    'id': 'heat_exchange_efficiency_explorer',
-                    'name': '熱交換効率の探査',
-                    'description': '冷却系統の熱交換効率計算',
-                    'type': 'achievement',
-                    'target': 1,
-                    'current': 0,
-                    'reward': {'experience': 270, 'crypto': 0.0027},
-                    'status': 'active'
-                }
+                self._make_goal('combustion_temperature_explorer',  '燃焼温度の探求者',           '3000K以上の燃焼温度を計算で確認',
+                    'achievement', target=1,  experience=270,  crypto=0.0027),
+                self._make_goal('propellant_cooling_researcher',    '推進剤冷却技術研究',         '燃焼温度低減技術を理論計算',
+                    'achievement', target=1,  experience=270,  crypto=0.0027),
+                self._make_goal('heat_exchange_efficiency_explorer','熱交換効率の探査',           '冷却系統の熱交換効率計算',
+                    'achievement', target=1,  experience=270,  crypto=0.0027),
             ],
+
+            # ---- 設計カテゴリ: ノズル・燃焼室形状 ----
             'design_goals': [
-                {
-                    'id': 'expansion_ratio_poet',
-                    'name': '膨張比の詩人',
-                    'description': '膨張比15以上のノズル計算を実施',
-                    'type': 'achievement',
-                    'target': 1,
-                    'current': 0,
-                    'reward': {'experience': 220, 'crypto': 0.0022},
-                    'status': 'active'
-                },
-                {
-                    'id': 'nozzle_design_master',
-                    'name': 'ノズル設計の匠',
-                    'description': '拡大膨張ノズル設計と計算成功',
-                    'type': 'achievement',
-                    'target': 1,
-                    'current': 0,
-                    'reward': {'experience': 300, 'crypto': 0.003},
-                    'status': 'active'
-                },
-                {
-                    'id': 'combustion_chamber_shape_revolution',
-                    'name': '燃焼室形状の革命',
-                    'description': '複雑な燃焼室設計で性能向上計算',
-                    'type': 'achievement',
-                    'target': 1,
-                    'current': 0,
-                    'reward': {'experience': 350, 'crypto': 0.0035},
-                    'status': 'active'
-                }
+                self._make_goal('expansion_ratio_poet',             '膨張比の詩人',               '膨張比15以上のノズル計算を実施',
+                    'achievement', target=1,  experience=220,  crypto=0.0022),
+                self._make_goal('nozzle_design_master',             'ノズル設計の匠',             '拡大膨張ノズル設計と計算成功',
+                    'achievement', target=1,  experience=300,  crypto=0.003),
+                self._make_goal('combustion_chamber_shape_revolution','燃焼室形状の革命',         '複雑な燃焼室設計で性能向上計算',
+                    'achievement', target=1,  experience=350,  crypto=0.0035),
             ],
+
+            # ---- 高度解析カテゴリ: 精度・多段式・安定性・流体力学 ----
             'advanced_analysis_goals': [
-                {
-                    'id': 'calculation_accuracy_explorer',
-                    'name': '計算精度の探求者',
-                    'description': '誤差1%以下の再現性ある計算を実施',
-                    'type': 'achievement',
-                    'target': 1,
-                    'current': 0,
-                    'reward': {'experience': 350, 'crypto': 0.0035},
-                    'status': 'active'
-                },
-                {
-                    'id': 'multi_stage_propulsion_simulator',
-                    'name': '多段階推進シミュレータ',
-                    'description': '多段式ロケットの燃焼計算を模擬',
-                    'type': 'achievement',
-                    'target': 1,
-                    'current': 0,
-                    'reward': {'experience': 380, 'crypto': 0.0038},
-                    'status': 'active'
-                },
-                {
-                    'id': 'combustion_stability_guardian',
-                    'name': '燃焼安定性の守護者',
-                    'description': '不安定燃焼を解析し回避計算',
-                    'type': 'achievement',
-                    'target': 1,
-                    'current': 0,
-                    'reward': {'experience': 400, 'crypto': 0.004},
-                    'status': 'active'
-                },
-                {
-                    'id': 'reaction_rate_analyzer',
-                    'name': '反応速度の解析者',
-                    'description': '燃焼反応速度の最適化計算',
-                    'type': 'achievement',
-                    'target': 1,
-                    'current': 0,
-                    'reward': {'experience': 300, 'crypto': 0.003},
-                    'status': 'active'
-                },
-                {
-                    'id': 'combustion_gas_dynamics',
-                    'name': '燃焼ガスの動力学',
-                    'description': '燃焼ガスの流体力学計算を実施',
-                    'type': 'achievement',
-                    'target': 1,
-                    'current': 0,
-                    'reward': {'experience': 350, 'crypto': 0.0035},
-                    'status': 'active'
-                },
-                {
-                    'id': 'extreme_combustion_challenger',
-                    'name': '極限燃焼条件への挑戦',
-                    'description': '極高圧・高温条件での計算成功',
-                    'type': 'achievement',
-                    'target': 1,
-                    'current': 0,
-                    'reward': {'experience': 400, 'crypto': 0.004},
-                    'status': 'active'
-                }
+                self._make_goal('calculation_accuracy_explorer',    '計算精度の探求者',           '誤差1%以下の再現性ある計算を実施',
+                    'achievement', target=1,  experience=350,  crypto=0.0035),
+                self._make_goal('multi_stage_propulsion_simulator', '多段階推進シミュレータ',     '多段式ロケットの燃焼計算を模擬',
+                    'achievement', target=1,  experience=380,  crypto=0.0038),
+                self._make_goal('combustion_stability_guardian',    '燃焼安定性の守護者',         '不安定燃焼を解析し回避計算',
+                    'achievement', target=1,  experience=400,  crypto=0.004),
+                self._make_goal('reaction_rate_analyzer',           '反応速度の解析者',           '燃焼反応速度の最適化計算',
+                    'achievement', target=1,  experience=300,  crypto=0.003),
+                self._make_goal('combustion_gas_dynamics',          '燃焼ガスの動力学',           '燃焼ガスの流体力学計算を実施',
+                    'achievement', target=1,  experience=350,  crypto=0.0035),
+                self._make_goal('extreme_combustion_challenger',    '極限燃焼条件への挑戦',       '極高圧・高温条件での計算成功',
+                    'achievement', target=1,  experience=400,  crypto=0.004),
             ],
-            'documentation_goals': [
-                {
-                    'id': 'engineering_document_master',
-                    'name': 'エンジニアリング文書の達人',
-                    'description': 'CEA計算結果を技術報告書にまとめる',
-                    'type': 'achievement',
-                    'target': 1,
-                    'current': 0,
-                    'reward': {'experience': 300, 'crypto': 0.003},
-                    'status': 'active'
-                },
-                {
-                    'id': 'propulsion_research_conference_participant',
-                    'name': '燃焼推進研究会議参加',
-                    'description': '専門家とのオンライン討論に参加（報告提出）',
-                    'type': 'achievement',
-                    'target': 1,
-                    'current': 0,
-                    'reward': {'experience': 350, 'crypto': 0.0035},
-                    'status': 'active'
-                },
-                {
-                    'id': 'future_rocket_bridge',
-                    'name': '未来ロケットへの架け橋',
-                    'description': '新技術を取り入れたCEA計算成功',
-                    'type': 'achievement',
-                    'target': 1,
-                    'current': 0,
-                    'reward': {'experience': 400, 'crypto': 0.004},
-                    'status': 'active'
-                }
+
+            # ---- ドキュメントカテゴリ: レポート・研究発表 ----
+        'documentation_goals': [
+                self._make_goal('engineering_document_master',      'エンジニアリング文書の達人',   'CEA計算結果を技術報告書にまとめる',
+                    'achievement', target=1,  experience=300,  crypto=0.003),
+                self._make_goal('propulsion_research_conference_participant', '燃焼推進研究会議参加', '専門家とのオンライン討論に参加（報告提出）',
+                    'achievement', target=1,  experience=350,  crypto=0.0035),
+                self._make_goal('future_rocket_bridge',             '未来ロケットへの架け橋',     '新技術を取り入れたCEA計算成功',
+                    'achievement', target=1,  experience=400,  crypto=0.004),
             ]
         }
     
@@ -542,17 +263,21 @@ class CEALearningSystem:
         print("\n💡 ヒント: 番号を入力するか、直接化学式を入力してください")
         print("💡 例: 1 または LH2 または custom")
     
-    def select_propellant(self, propellant_type: str) -> str:
+    def select_propellant(self, propellant_type: str, prev_prompt: str = "", prev_default: str = "") -> str:
         """推進剤を選択"""
         propellants = self.propellants['fuels'] if propellant_type == 'fuel' else self.propellants['oxidizers']
+        prompt_str = f"{'燃料' if propellant_type == 'fuel' else '酸化剤'}を選択してください (list/番号/化学式/custom) [{'LH2' if propellant_type == 'fuel' else 'LOX'}]: "
+        default_val = "LH2" if propellant_type == 'fuel' else "LOX"
         
         while True:
-            choice = input(f"{'燃料' if propellant_type == 'fuel' else '酸化剤'}を選択してください (番号/化学式/custom): ").strip()
+            choice, sig = self._prompt_input(prompt_str, default_val, prev_prompt=prev_prompt, prev_default=prev_default)
             
-            if choice.lower() == "abort":
-                return None
-            if choice.lower() == "back":
-                return "back"
+            if sig == "abort": return None
+            if sig == "back": return "back"
+            
+            if choice.lower() == "list":
+                self.show_propellant_list(propellant_type + "s")
+                continue
             
             # 番号で選択
             if choice.isdigit():
@@ -569,11 +294,9 @@ class CEALearningSystem:
             
             # カスタム入力
             if choice.lower() == "custom":
-                custom = input(f"カスタム{'燃料' if propellant_type == 'fuel' else '酸化剤'}の化学式を入力: ").strip()
-                if custom.lower() == "abort":
-                    return None
-                if custom.lower() == "back":
-                    continue
+                custom, csig = self._prompt_input(f"カスタム{'燃料' if propellant_type == 'fuel' else '酸化剤'}の化学式を入力: ")
+                if csig == "abort": return None
+                if csig == "back": continue
                 return custom.upper()
             
             print("❌ 無効な選択です。番号、化学式、または 'custom' を入力してください")
@@ -591,272 +314,114 @@ class CEALearningSystem:
         print("📊 計算パラメータを入力してください:")
         
         try:
-            # 燃料選択
+            # 燃料・酸化剤選択
+            fuel = None
+            oxidizer = None
+            
             while True:
-                fuel_input = input("燃料を選択してください (list/番号/化学式/custom) [LH2]: ").strip()
-                if fuel_input.lower() == "abort":
-                    print("❌ 記録を中断しました")
-                    return None
-                if fuel_input.lower() == "back":
-                    print("🔄 最初の入力なので戻る場所がありません。記録を中断します。")
-                    return None
-                if fuel_input.lower() == "list":
-                    self.show_propellant_list("fuels")
-                    continue
-                
-                fuel = self.select_propellant('fuel')
                 if fuel is None:
-                    print("❌ 記録を中断しました")
-                    return None
-                if fuel == "back":
-                    continue
-                break
-            
-            fuel = fuel or "LH2"
-            
-            # 酸化剤選択
-            while True:
-                oxidizer_input = input("酸化剤を選択してください (list/番号/化学式/custom) [LOX]: ").strip()
-                if oxidizer_input.lower() == "abort":
-                    print("❌ 記録を中断しました")
-                    return None
-                if oxidizer_input.lower() == "back":
-                    print("🔄 一つ前の入力に戻ります")
-                    # 燃料選択に戻る
-                    while True:
-                        fuel_input = input("燃料を選択してください (list/番号/化学式/custom) [LH2]: ").strip()
-                        if fuel_input.lower() == "abort":
-                            print("❌ 記録を中断しました")
-                            return None
-                        if fuel_input.lower() == "list":
-                            self.show_propellant_list("fuels")
-                            continue
-                        
-                        fuel = self.select_propellant('fuel')
-                        if fuel is None:
-                            print("❌ 記録を中断しました")
-                            return None
-                        if fuel == "back":
-                            continue
-                        break
-                    
-                    fuel = fuel or "LH2"
-                    oxidizer_input = input("酸化剤を選択してください (list/番号/化学式/custom) [LOX]: ").strip()
-                    if oxidizer_input.lower() == "abort":
-                        print("❌ 記録を中断しました")
-                        return None
+                    fuel = self.select_propellant('fuel')
+                    if fuel is None: return None
+                    if fuel == "back":
+                        print("🔄 最初の入力なので戻る場所がありません。")
+                        fuel = None
+                        continue
                 
-                if oxidizer_input.lower() == "list":
-                    self.show_propellant_list("oxidizers")
-                    continue
-                
-                oxidizer = self.select_propellant('oxidizer')
-                if oxidizer is None:
-                    print("❌ 記録を中断しました")
-                    return None
+                oxidizer = self.select_propellant('oxidizer', prev_prompt="燃料を選択してください (list/番号/化学式/custom) [LH2]: ", prev_default="LH2")
+                if oxidizer is None: return None
                 if oxidizer == "back":
+                    fuel = None
                     continue
                 break
             
-            oxidizer = oxidizer or "LOX"
-            
-            Pc_input = input("燃焼室圧力 (bar) [50]: ").strip()
-            if Pc_input.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
-            if Pc_input.lower() == "back":
-                print("🔄 一つ前の入力に戻ります")
-                # 酸化剤選択に戻る
-                while True:
-                    oxidizer_input = input("酸化剤を選択してください (list/番号/化学式/custom) [LOX]: ").strip()
-                    if oxidizer_input.lower() == "abort":
-                        print("❌ 記録を中断しました")
-                        return None
-                    if oxidizer_input.lower() == "list":
-                        self.show_propellant_list("oxidizers")
-                        continue
-                    
-                    oxidizer = self.select_propellant('oxidizer')
-                    if oxidizer is None:
-                        print("❌ 記録を中断しました")
-                        return None
-                    if oxidizer == "back":
-                        continue
-                    break
-                
-                oxidizer = oxidizer or "LOX"
-            Pc_input = input("燃焼室圧力 (bar) [50]: ").strip()
-            if Pc_input.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
-            Pc = float(Pc_input or "50")
-            
-            MR_input = input("混合比 [6.0]: ").strip()
-            if MR_input.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
-            if MR_input.lower() == "back":
-                print("🔄 一つ前の入力に戻ります")
-                Pc_input = input("燃焼室圧力 (bar) [50]: ").strip()
-                if Pc_input.lower() == "abort":
-                    print("❌ 記録を中断しました")
-                    return None
-                Pc = float(Pc_input or "50")
-            MR_input = input("混合比 [6.0]: ").strip()
-            if MR_input.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
-            MR = float(MR_input or "6.0")
-            
-            Pe_input = input("排気圧力 (bar) [1.0]: ").strip()
-            if Pe_input.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
-            if Pe_input.lower() == "back":
-                print("🔄 一つ前の入力に戻ります")
-                MR_input = input("混合比 [6.0]: ").strip()
-                if MR_input.lower() == "abort":
-                    print("❌ 記録を中断しました")
-                    return None
-                MR = float(MR_input or "6.0")
-            Pe_input = input("排気圧力 (bar) [1.0]: ").strip()
-            if Pe_input.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
-            Pe = float(Pe_input or "1.0")
-            
+            val, sig = self._prompt_input("燃焼室圧力 (bar) [50]: ", "50")
+            if sig == "abort": return None
+            Pc = float(val)
+
+            val, sig = self._prompt_input("混合比 [6.0]: ", "6.0", prev_prompt="燃焼室圧力 (bar) [50]: ", prev_default="50")
+            if sig == "abort": return None
+            if sig == "back": Pc = float(val)
+            else: MR = float(val)
+            if sig == "back":
+                val, sig = self._prompt_input("混合比 [6.0]: ", "6.0")
+                if sig == "abort": return None
+                MR = float(val)
+
+            val, sig = self._prompt_input("排気圧力 (bar) [1.0]: ", "1.0", prev_prompt="混合比 [6.0]: ", prev_default="6.0")
+            if sig == "abort": return None
+            if sig == "back": MR = float(val)
+            else: Pe = float(val)
+            if sig == "back":
+                val, sig = self._prompt_input("排気圧力 (bar) [1.0]: ", "1.0")
+                if sig == "abort": return None
+                Pe = float(val)
+
         except ValueError:
             print("❌ 無効な値です。デフォルト値を使用します。")
-            fuel, oxidizer, Pc, MR, Pe = "LH2", "LOX", 50.0, 6.0, 1.0
+            fuel, oxidizer, Pc, MR, Pe = fuel or "LH2", oxidizer or "LOX", 50.0, 6.0, 1.0
         
         # 計算結果入力
         print(f"\n📈 計算結果を入力してください:")
         
         try:
-            isp_vac_input = input("真空中比推力 (s) [400]: ").strip()
-            if isp_vac_input.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
-            if isp_vac_input.lower() == "back":
-                print("🔄 一つ前の入力に戻ります")
-                Pe_input = input("排気圧力 (bar) [1.0]: ").strip()
-                if Pe_input.lower() == "abort":
-                    print("❌ 記録を中断しました")
-                    return None
-                Pe = float(Pe_input or "1.0")
-            isp_vac_input = input("真空中比推力 (s) [400]: ").strip()
-            if isp_vac_input.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
-            isp_vacuum = float(isp_vac_input or "400")
-            
-            isp_sl_input = input("海面比推力 (s) [350]: ").strip()
-            if isp_sl_input.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
-            if isp_sl_input.lower() == "back":
-                print("🔄 一つ前の入力に戻ります")
-                isp_vac_input = input("真空中比推力 (s) [400]: ").strip()
-                if isp_vac_input.lower() == "abort":
-                    print("❌ 記録を中断しました")
-                    return None
-                isp_vacuum = float(isp_vac_input or "400")
-            isp_sl_input = input("海面比推力 (s) [350]: ").strip()
-            if isp_sl_input.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
-            isp_sea_level = float(isp_sl_input or "350")
-            
-            Tc_input = input("燃焼室温度 (K) [3500]: ").strip()
-            if Tc_input.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
-            if Tc_input.lower() == "back":
-                print("🔄 一つ前の入力に戻ります")
-                isp_sl_input = input("海面比推力 (s) [350]: ").strip()
-                if isp_sl_input.lower() == "abort":
-                    print("❌ 記録を中断しました")
-                    return None
-                isp_sea_level = float(isp_sl_input or "350")
-            Tc_input = input("燃焼室温度 (K) [3500]: ").strip()
-            if Tc_input.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
-            Tc = float(Tc_input or "3500")
-            
-            gamma_input = input("比熱比 [1.2]: ").strip()
-            if gamma_input.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
-            if gamma_input.lower() == "back":
-                print("🔄 一つ前の入力に戻ります")
-                Tc_input = input("燃焼室温度 (K) [3500]: ").strip()
-                if Tc_input.lower() == "abort":
-                    print("❌ 記録を中断しました")
-                    return None
-                Tc = float(Tc_input or "3500")
-            gamma_input = input("比熱比 [1.2]: ").strip()
-            if gamma_input.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
-            gamma = float(gamma_input or "1.2")
-            
-            Cf_input = input("推力係数 [1.8]: ").strip()
-            if Cf_input.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
-            if Cf_input.lower() == "back":
-                print("🔄 一つ前の入力に戻ります")
-                gamma_input = input("比熱比 [1.2]: ").strip()
-                if gamma_input.lower() == "abort":
-                    print("❌ 記録を中断しました")
-                    return None
-                gamma = float(gamma_input or "1.2")
-            Cf_input = input("推力係数 [1.8]: ").strip()
-            if Cf_input.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
-            Cf = float(Cf_input or "1.8")
-            
+            val, sig = self._prompt_input("真空中比推力 (s) [400]: ", "400")
+            if sig == "abort": return None
+            isp_vacuum = float(val)
+
+            val, sig = self._prompt_input("海面比推力 (s) [350]: ", "350", prev_prompt="真空中比推力 (s) [400]: ", prev_default="400")
+            if sig == "abort": return None
+            if sig == "back": isp_vacuum = float(val)
+            else: isp_sea_level = float(val)
+            if sig == "back":
+                val, sig = self._prompt_input("海面比推力 (s) [350]: ", "350")
+                if sig == "abort": return None
+                isp_sea_level = float(val)
+
+            val, sig = self._prompt_input("燃焼室温度 (K) [3500]: ", "3500", prev_prompt="海面比推力 (s) [350]: ", prev_default="350")
+            if sig == "abort": return None
+            if sig == "back": isp_sea_level = float(val)
+            else: Tc = float(val)
+            if sig == "back":
+                val, sig = self._prompt_input("燃焼室温度 (K) [3500]: ", "3500")
+                if sig == "abort": return None
+                Tc = float(val)
+
+            val, sig = self._prompt_input("比熱比 [1.2]: ", "1.2", prev_prompt="燃焼室温度 (K) [3500]: ", prev_default="3500")
+            if sig == "abort": return None
+            if sig == "back": Tc = float(val)
+            else: gamma = float(val)
+            if sig == "back":
+                val, sig = self._prompt_input("比熱比 [1.2]: ", "1.2")
+                if sig == "abort": return None
+                gamma = float(val)
+
+            val, sig = self._prompt_input("推力係数 [1.8]: ", "1.8", prev_prompt="比熱比 [1.2]: ", prev_default="1.2")
+            if sig == "abort": return None
+            if sig == "back": gamma = float(val)
+            else: Cf = float(val)
+            if sig == "back":
+                val, sig = self._prompt_input("推力係数 [1.8]: ", "1.8")
+                if sig == "abort": return None
+                Cf = float(val)
+
         except ValueError:
             print("❌ 無効な値です。デフォルト値を使用します。")
-            isp_vacuum, isp_sea_level, Tc, gamma, Cf = 400, 350, 3500, 1.2, 1.8
+            isp_vacuum, isp_sea_level, Tc, gamma, Cf = 400.0, 350.0, 3500.0, 1.2, 1.8
         
         # 学習メモ入力
         print(f"\n📝 学習メモを入力してください:")
-        notes = input("計算の目的、発見、学んだこと: ").strip()
-        if notes.lower() == "abort":
-            print("❌ 記録を中断しました")
-            return None
-        if notes.lower() == "back":
-            print("🔄 一つ前の入力に戻ります")
-            Cf_input = input("推力係数 [1.8]: ").strip()
-            if Cf_input.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
-            Cf = float(Cf_input or "1.8")
-        notes = input("計算の目的、発見、学んだこと: ").strip()
-        if notes.lower() == "abort":
-            print("❌ 記録を中断しました")
-            return None
+        notes, sig = self._prompt_input("計算の目的、発見、学んだこと: ")
+        if sig == "abort": return None
         
         # 使用ツール入力
         print(f"\n🛠️ 使用ツール:")
-        tools = input("使用したソフトウェア/ツール (例: CEA, RPA, 自作プログラム): ").strip()
-        if tools.lower() == "abort":
-            print("❌ 記録を中断しました")
-            return None
-        if tools.lower() == "back":
-            print("🔄 一つ前の入力に戻ります")
-            notes = input("計算の目的、発見、学んだこと: ").strip()
-            if notes.lower() == "abort":
-                print("❌ 記録を中断しました")
-                return None
-        tools = input("使用したソフトウェア/ツール (例: CEA, RPA, 自作プログラム): ").strip()
-        if tools.lower() == "abort":
-            print("❌ 記録を中断しました")
-            return None
-        
+        tools, sig = self._prompt_input("使用したソフトウェア/ツール (例: CEA, RPA, 自作プログラム): ", prev_prompt="計算の目的、発見、学んだこと: ")
+        if sig == "abort": return None
+        if sig == "back":
+            notes = tools  # back entered into tools gives back the notes
+            tools, sig = self._prompt_input("使用したソフトウェア/ツール (例: CEA, RPA, 自作プログラム): ")
+            if sig == "abort": return None
+
         # 結果をまとめる
         result = {
             'timestamp': datetime.now().isoformat(),

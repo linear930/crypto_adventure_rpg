@@ -32,6 +32,19 @@ from actions.power_connection.assistant import PowerConnectionAssistant
 from config_manager import ConfigManager
 
 class CryptoAdventureRPG:
+    """
+    ゲーム全体を統括するメインクラス。
+
+    各サブシステム（CEA・発電・天体観測・世界観測等）を保持し、
+    メインメニューから各機能への導線を管理します。
+
+    新しいアクティビティ（機能）を追加する場合:
+        1. actions/ 配下に新しいシステムクラスを作成する
+        2. __init__() でインスタンス化して set_game_engine() を呼ぶ
+        3. _show_main_menu() にメニュー項目を追加する
+        4. 対応する _xxx_menu() メソッドを作成し、
+           記録後は _grant_activity_rewards() を呼んで報酬を付与する
+    """
     def __init__(self):
         # 設定管理システムの初期化
         self.config_manager = ConfigManager()
@@ -92,6 +105,72 @@ class CryptoAdventureRPG:
         }
         self.consecutive_days_bonus = 0
         
+    # ------------------------------------------------------------------
+    # 報酬付与（新しいアクティビティを追加したらここのロジックも参照）
+    # ------------------------------------------------------------------
+
+    def _grant_activity_rewards(
+        self,
+        system,
+        result: dict,
+        activity_type: str,
+        engine_add_method_name: str,
+    ):
+        """
+        アクティビティ実行後の共通処理をまとめたヘルパーです。
+        CEA/発電/天体観測のどのメニューからも同じ手順で呼び出せます。
+
+        処理の流れ:
+            1. 報酬額を計算する
+            2. 活動をテキストログに記録する
+            3. GameEngineのウォレット（wallet.json）に結果を追記する
+            4. 経験値とCryptoを付与する
+            5. 獲得報酬を画面に表示する
+            6. 学習目標の達成チェックを行い、達成したものがあれば追加報酬を付与する
+
+        Args:
+            system:                  アクティビティのシステムオブジェクト
+                                     （CEALearningSystem / PowerGenerationLearningSystem等）
+            result:                  アクティビティの記録結果辞書
+            activity_type:           活動種別文字列（例: "cea_calculation"）
+            engine_add_method_name:  GameEngineに結果を追加するメソッド名
+                                     （例: "add_cea_result"）
+        """
+        # 1. 報酬額を計算
+        reward = self._get_activity_reward(activity_type, result)
+
+        # 2. テキストログファイルに記録
+        log_details = {**result, **reward}
+        self._record_activity(activity_type, log_details)
+
+        # 3. GameEngine の wallet に追記（メソッド名を文字列で受け取って呼び出す）
+        add_method = getattr(self.game_engine, engine_add_method_name)
+        add_method(result)
+
+        # 4. 経験値と Crypto を付与
+        self.game_engine.add_experience(reward['total_experience'])
+        self.game_engine.add_crypto(reward['crypto_earned'])
+
+        # 5. 報酬を画面に表示
+        print(f"\n🎁 報酬獲得!")
+        print(f"   💎 基本報酬: +{reward['base_reward']} 経験値")
+        if reward['bonus_reward'] > 0:
+            print(f"   ⭐ 追加報酬: +{reward['bonus_reward']} 経験値")
+        if reward['consecutive_bonus'] > 0:
+            print(f"   🔥 連続活動ボーナス: +{reward['consecutive_bonus']} 経験値")
+        print(f"   💰 Crypto: +{reward['crypto_earned']:.6f} XMR")
+        print(f"   📊 総獲得経験値: {reward['total_experience']}")
+
+        # 6. 学習目標の達成チェックと追加報酬付与
+        completed_goals = system.check_goal_completion()
+        for goal in completed_goals:
+            self.game_engine.add_experience(goal['reward']['experience'])
+            self.game_engine.add_crypto(goal['reward']['crypto'])
+            print(f"🎉 学習目標達成: {goal['name']}!")
+            print(f"   💎 経験値 +{goal['reward']['experience']}")
+            print(f"   💰 Crypto +{goal['reward']['crypto']:.6f} XMR")
+            print()
+
     def _initialize_history_files(self):
         """履歴ファイルを初期化"""
         # CEA計算履歴ファイル
@@ -112,7 +191,13 @@ class CryptoAdventureRPG:
             with open(optics_file, 'w', encoding='utf-8') as f:
                 json.dump({"observations": []}, f, ensure_ascii=False, indent=2)        
     def _load_config(self) -> Dict:
-        """設定ファイルを読み込み（非推奨 - ConfigManagerを使用）"""
+        """設定ファイルを読み込みます。
+
+        .. deprecated::
+            この直接呼び出しは非推奨です。
+            設定は __init__ で self.config に格納済みです。
+            新しいコードでは self.config を直接参照してください。
+        """
         return self.config_manager.load_config()
     
     def start_game(self):
@@ -401,40 +486,12 @@ class CryptoAdventureRPG:
             if choice == "1":
                 result = self.cea_system.record_cea_calculation()
                 if result:
-                    # 報酬を計算
-                    reward = self._get_activity_reward("cea_calculation", result)
-                    
-                    # 活動をテキストファイルに記録
-                    log_details = result.copy()
-                    log_details.update(reward)
-                    self._record_activity("cea_calculation", log_details)
-                    
-                    # 履歴をGameEngineに保存
-                    self.game_engine.add_cea_result(result)
-                    
-                    # 報酬を付与
-                    self.game_engine.add_experience(reward['total_experience'])
-                    self.game_engine.add_crypto(reward['crypto_earned'])
-                    
-                    # 報酬表示
-                    print(f"\n🎁 報酬獲得!")
-                    print(f"   💎 基本報酬: +{reward['base_reward']} 経験値")
-                    if reward['bonus_reward'] > 0:
-                        print(f"   ⭐ 追加報酬: +{reward['bonus_reward']} 経験値")
-                    if reward['consecutive_bonus'] > 0:
-                        print(f"   🔥 連続活動ボーナス: +{reward['consecutive_bonus']} 経験値")
-                    print(f"   💰 Crypto: +{reward['crypto_earned']:.6f} XMR")
-                    print(f"   📊 総獲得経験値: {reward['total_experience']}")
-                    
-                    # 学習目標の完了チェック
-                    completed_goals = self.cea_system.check_goal_completion()
-                    for goal in completed_goals:
-                        self.game_engine.add_experience(goal['reward']['experience'])
-                        self.game_engine.add_crypto(goal['reward']['crypto'])
-                        print(f"🎉 学習目標達成: {goal['name']}!")
-                        print(f"   💎 経験値 +{goal['reward']['experience']}")
-                        print(f"   💰 Crypto +{goal['reward']['crypto']:.6f} XMR")
-                        print()  # 改行を追加
+                    self._grant_activity_rewards(
+                        system=self.cea_system,
+                        result=result,
+                        activity_type="cea_calculation",
+                        engine_add_method_name="add_cea_result",
+                    )
                         
             elif choice == "2":
                 # デバッグ除外: 学習目標確認は行動回数を消費しない
@@ -490,40 +547,12 @@ class CryptoAdventureRPG:
             if choice == "1":
                 result = self.power_system.record_power_generation()
                 if result:
-                    # 報酬を計算
-                    reward = self._get_activity_reward("power_generation", result)
-                    
-                    # 活動をテキストファイルに記録
-                    log_details = result.copy()
-                    log_details.update(reward)
-                    self._record_activity("power_generation", log_details)
-                    
-                    # 履歴をGameEngineに保存
-                    self.game_engine.add_power_plant_result(result)
-                    
-                    # 報酬を付与
-                    self.game_engine.add_experience(reward['total_experience'])
-                    self.game_engine.add_crypto(reward['crypto_earned'])
-                    
-                    # 報酬表示
-                    print(f"\n🎁 報酬獲得!")
-                    print(f"   💎 基本報酬: +{reward['base_reward']} 経験値")
-                    if reward['bonus_reward'] > 0:
-                        print(f"   ⭐ 追加報酬: +{reward['bonus_reward']} 経験値")
-                    if reward['consecutive_bonus'] > 0:
-                        print(f"   🔥 連続活動ボーナス: +{reward['consecutive_bonus']} 経験値")
-                    print(f"   💰 Crypto: +{reward['crypto_earned']:.6f} XMR")
-                    print(f"   📊 総獲得経験値: {reward['total_experience']}")
-                    
-                    # 学習目標の完了チェック
-                    completed_goals = self.power_system.check_goal_completion()
-                    for goal in completed_goals:
-                        self.game_engine.add_experience(goal['reward']['experience'])
-                        self.game_engine.add_crypto(goal['reward']['crypto'])
-                        print(f"🎉 学習目標達成: {goal['name']}!")
-                        print(f"   💎 経験値 +{goal['reward']['experience']}")
-                        print(f"   💰 Crypto +{goal['reward']['crypto']:.6f} XMR")
-                        print()  # 改行を追加
+                    self._grant_activity_rewards(
+                        system=self.power_system,
+                        result=result,
+                        activity_type="power_generation",
+                        engine_add_method_name="add_power_plant_result",
+                    )
                         
             elif choice == "2":
                 # デバッグ除外: 学習目標確認は行動回数を消費しない
@@ -570,40 +599,12 @@ class CryptoAdventureRPG:
             if choice == "1":
                 result = self.optics_system.record_observation()
                 if result:
-                    # 報酬を計算
-                    reward = self._get_activity_reward("optics_observation", result)
-                    
-                    # 活動をテキストファイルに記録
-                    log_details = result.copy()
-                    log_details.update(reward)
-                    self._record_activity("optics_observation", log_details)
-                    
-                    # 履歴をGameEngineに保存
-                    self.game_engine.add_optics_observation(result)
-                    
-                    # 報酬を付与
-                    self.game_engine.add_experience(reward['total_experience'])
-                    self.game_engine.add_crypto(reward['crypto_earned'])
-                    
-                    # 報酬表示
-                    print(f"\n🎁 報酬獲得!")
-                    print(f"   💎 基本報酬: +{reward['base_reward']} 経験値")
-                    if reward['bonus_reward'] > 0:
-                        print(f"   ⭐ 追加報酬: +{reward['bonus_reward']} 経験値")
-                    if reward['consecutive_bonus'] > 0:
-                        print(f"   🔥 連続活動ボーナス: +{reward['consecutive_bonus']} 経験値")
-                    print(f"   💰 Crypto: +{reward['crypto_earned']:.6f} XMR")
-                    print(f"   📊 総獲得経験値: {reward['total_experience']}")
-                    
-                    # 学習目標の完了チェック
-                    completed_goals = self.optics_system.check_goal_completion()
-                    for goal in completed_goals:
-                        self.game_engine.add_experience(goal['reward']['experience'])
-                        self.game_engine.add_crypto(goal['reward']['crypto'])
-                        print(f"🎉 学習目標達成: {goal['name']}!")
-                        print(f"   💎 経験値 +{goal['reward']['experience']}")
-                        print(f"   💰 Crypto +{goal['reward']['crypto']:.6f} XMR")
-                        print()  # 改行を追加
+                    self._grant_activity_rewards(
+                        system=self.optics_system,
+                        result=result,
+                        activity_type="optics_observation",
+                        engine_add_method_name="add_optics_observation",
+                    )
                         
             elif choice == "2":
                 # デバッグ除外: 学習目標確認は行動回数を消費しない
@@ -1225,7 +1226,26 @@ class CryptoAdventureRPG:
         return "\n".join(log_lines)
     
     def _get_activity_reward(self, activity_type: str, details: Dict) -> Dict:
-        """活動に対する報酬を計算"""
+        """
+        アクティビティの種別と内容に基づいて報酬額を計算します。
+
+        新しいアクティビティ種別を追加する場合:
+            1. base_rewards に種別名と基本報酬値を追加する
+            2. その下の if/elif ブロックにボーナス条件を追加する
+
+        Args:
+            activity_type: "cea_calculation" / "power_generation" / "optics_observation" 等
+            details:       アクティビティの記録辞書
+
+        Returns:
+            {
+                'base_reward':       int,   基本報酬,
+                'bonus_reward':      int,   ボーナス報酬,
+                'consecutive_bonus': int,   連続活動ボーナス,
+                'total_experience':  int,   合計経験値,
+                'crypto_earned':     float, 獲得 XMR,
+            }
+        """
         base_rewards = {
             'cea_calculation': 50,
             'power_generation': 40,
